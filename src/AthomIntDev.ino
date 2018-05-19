@@ -1,11 +1,7 @@
 /*
  * Project AthomIntDev
  * Description:
-<<<<<<< HEAD
  * Author: SpecialCircumstances
-=======
- * Author:
->>>>>>> refs/remotes/origin/master
  * Date:
  */
 #include "JsonParserGeneratorRK.h"
