@@ -1,7 +1,7 @@
 /*
  * Project AthomIntDev
  * Description:
- * Author:
+ * Author: SpecialCircumstances
  * Date:
  */
 #include "JsonParserGeneratorRK.h"
