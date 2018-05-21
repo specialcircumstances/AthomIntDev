@@ -1,8 +1,17 @@
 // A number of definitions lifted from the Athom libs
 
+
+#ifndef athomdefs_h
+#define athomdefs_h
+
+const int MAX_NUMBER_NODES = 8;
+const int MAX_CHARS_CLASS = 32;
+//const int HOMEYVARBYTELIMIT = 622;
+
+
 // From
 // https://github.com/athombv/node-homey-lib/blob/master/assets/device/classes.json
-const char athomClasses[][32] = {
+const char athomClasses[][MAX_CHARS_CLASS] = {
   "other",
   "socket",
   "light",
@@ -28,7 +37,7 @@ const char athomClasses[][32] = {
 
 // FROM
 // https://github.com/athombv/node-homey-lib/blob/master/assets/capability/capabilities.json
-const char athomCapabilities[][32] {
+const char athomCapabilities[][MAX_CHARS_CLASS] {
   "onoff",
   "dim",
   "light_hue",
@@ -93,3 +102,5 @@ const char athomCapabilities[][32] {
   "speaker_next",
   "speaker_prev"
 };
+
+#endif

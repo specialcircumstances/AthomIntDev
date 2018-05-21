@@ -4,11 +4,13 @@
  * Author: SpecialCircumstances
  * Date:
  */
- #ifndef athomdevice_h
- #define athomdevice_h
+#ifndef athomdevice_h
+#define athomdevice_h
 
 // #include "Arduino.h"
-#include athomdefs.h
+#include "application.h"    // Need String at least
+#include "athomdefs.h"
+#include "JsonParserGeneratorRK.h"
 
 // Bearing in mind that Homey has the following types:
 // Number, which is Decimal to two places.
@@ -16,6 +18,12 @@
 // ENUM
 // So, we will use an internal "int" and shift the decimal point.
 // e.g. 1 is stored as 100
+
+// Forward Declarations
+
+class AthomDevice;
+
+// Class definitions
 
  class AthomCapability
  {
@@ -106,9 +114,13 @@
  class AthomNode
  {
    public:
-     AthomNode(); // Constructor
-     int setName(String myName); // Set Name of Node
+     AthomNode(const String myClass); // Constructor
+     int setName(const String myName); // Set Name of Node
      String getName(); // Retrieve Name of Node
+
+     // Class
+     int setClass(const String myClass);     // Set Homey Class of Device
+     String getClass();                // Retrieve Class of Device
 
      // capabilities
      int addCapability(String myCapability); // Add a Capability to the Node
@@ -122,7 +134,8 @@
      // TODO:
 
      // To support multiple nodes in an efficient manner
-     class AthomNode* getPrev();
+     int setDevice(AthomDevice* myDevice);
+     AthomNode* getPrev();
      int setPrev(AthomNode* prevNode);
      AthomNode* getNext();
      int setNext(AthomNode* nextNode);
@@ -131,10 +144,12 @@
      //void dash();
    private:
      String _myName;
+     char _myClass[MAX_CHARS_CLASS];
      AthomCapability* _firstCapability; // PTR to first capability
      AthomAction* _firstAction;         // PTR to first action
      AthomNode* _prevNode;              //PTR to previous Node
      AthomNode* _nextNode;              //PTR to next Node
+     AthomDevice* _myDevice;            // PTR to device
  };
 
 
@@ -142,44 +157,39 @@
   {
     public:
       AthomDevice();                    // Constructor
-      int setName(String myName);       // Set Name of Device
+      int setName(const String myName);       // Set Name of Device
       String getName();                 // Retrieve Name of Device
 
-      // Class
-      int setClass(String myClass);     // Set Homey Class of Device
-      String getClass();                // Retrieve Class of Device
-
       // nodes
-      int addNode(String nodeName);        // Add a Node to the Device
-      int deleteNode(String nodeName);     // Delete a Node from the Device
-      int deleteNodeByNumber(int nodeNumber); // Delete a Node by Number
+      int addNode(const String nodeClass);        // Add a Node to the Device
+      int deleteNode(const int nodeId);     // Delete a Node from the Device
       String listNodes();                 // Get a list of Node TODO:PTR to array
       int countNodes();                  // Returns the number of nodes
-      AthomNode* getNode(String nodeName);
-      AthomNode* getNodeByNumber(int nodeNumber);
+      AthomNode* getNode(const int nodeNumber);
 
       // Registration of vars and functions with Particle Cloud
-      int register();                    // Must be called in Setup()
+      int registerCloud();                    // Must be called in Setup()
 
 
     private:
       String _myName;
-      AthomNode* _firstNode              // PTR to first node
+      AthomNode* _firstNode;              // PTR to first node
+      int _nodeCount;
 
       // Cloud variables we will expose
-      int _myHomeyAPI                     // We use as boolean
+      int _myHomeyAPI;                     // We use as boolean
       String _myHomeyClass;
       String _myHomeyCaps;
       String _myHomeyConfs;
       String _myHomeyActs;
-      String _myHomeyServ;       // A reponse channel ?????
+      String _myHomeySend;       // A reponse channel ?????
 
       // Cloud Functions we will expose
       int _myHomeyConf(String message);
       int _myHomeyGet(String message);
       int _myHomeySet(String message);
       int _myHomeyAct(String message);
-      int _myHomeyServ(String message); // A query channel ?????
+      int _myHomeyRecv(String message); // A query channel ?????
 
   };
 
