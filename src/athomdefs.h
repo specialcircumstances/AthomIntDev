@@ -4,8 +4,12 @@
 #ifndef athomdefs_h
 #define athomdefs_h
 
+const bool ATHOMDEFS_DEBUG = true;
+
 const int MAX_NUMBER_NODES = 8;
 const int MAX_CHARS_CLASS = 32;
+const int MAX_CHARS_CAPABILITY = 32;
+const int MAX_CHARS_NAME = 32;
 //const int HOMEYVARBYTELIMIT = 622;
 
 
@@ -37,7 +41,7 @@ const char athomClasses[][MAX_CHARS_CLASS] = {
 
 // FROM
 // https://github.com/athombv/node-homey-lib/blob/master/assets/capability/capabilities.json
-const char athomCapabilities[][MAX_CHARS_CLASS] {
+const char athomCapabilities[][MAX_CHARS_CAPABILITY] {
   "onoff",
   "dim",
   "light_hue",

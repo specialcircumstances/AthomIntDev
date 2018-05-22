@@ -58,19 +58,54 @@ void setup() {
  debug("Checking class of node 1. Should be other");
  AthomNode* myNode = myDevice.getNode(1);
  debug(myNode->getClass());
+ debug("via Device");
+ debug(myDevice.getClass(1));
  debug("Checking class of node 2. Should be thermostat");
  myNode = myDevice.getNode(2);
  debug(myNode->getClass());
+ debug("via Device");
+ debug(myDevice.getClass(2));
  debug("Checking class of node 3. Should be kettle");
  myNode = myDevice.getNode(3);
  debug(myNode->getClass());
+ debug("via Device");
+ debug(myDevice.getClass(3));
  debug("Checking class of node 4. Should be nullptr");
  myNode = myDevice.getNode(4);
  if (myNode == nullptr) {
    debug("nullptr returned OK.");
  }
-
-
+ debug("via Device - should be not found");
+ debug(myDevice.getClass(4));
+ debug("---------------------------------------------");
+ debug("CAPABILITIES");
+ debug("Adding capability, bad node, good class");
+ debugint(myDevice.addCapability(7,"onoff"));
+ debug("Adding capability, good node, bad class");
+ debugint(myDevice.addCapability(3,"rubbish"));
+ debug("Adding capability, good node, good class");
+ debugint(myDevice.addCapability(3,"onoff"));
+ debug("Adding another capability, good node, good class");
+ debugint(myDevice.addCapability(3,"dim"));
+ debug("Adding another capability, good node, good class");
+ debugint(myDevice.addCapability(3,"light_hue"));
+ debug("Adding same capability, different node, good class");
+ debugint(myDevice.addCapability(1,"light_hue"));
+ debug("Adding same capability, different node, good class");
+ debugint(myDevice.addCapability(2,"thermostat_mode"));
+ debug("Checking first class of nodes 1-3.");
+ debug(myDevice.getCapability(1,1));
+ debug(myDevice.getCapability(2,1));
+ debug(myDevice.getCapability(3,1));
+ debug("Checking first class of non existant node.");
+ debug(myDevice.getCapability(4,1));
+ debug("Checking non existant class of first node.");
+ debug(myDevice.getCapability(1,56));
+ debug("Checking non existant class of last node.");
+ debug(myDevice.getCapability(3,56));
+ debug("Checking non existant class of non existant node.");
+ debug(myDevice.getCapability(34,56));
+ 
 }
 
 
@@ -78,5 +113,6 @@ void loop() {
  // Get some data
  // Trigger the webhook
  // Wait 60 seconds
+ debug("Mem check");
  delay(60000);
 }

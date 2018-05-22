@@ -21,6 +21,7 @@
 
 // Forward Declarations
 
+class AthomNode;
 class AthomDevice;
 
 // Class definitions
@@ -28,23 +29,24 @@ class AthomDevice;
  class AthomCapability
  {
    public:
-     AthomCapability(); // Constructor
+     AthomCapability(const String myCap); // Constructor
      // Get and set capability name
-     int setName(String capabilityName);
-     String getName();
+     int setCapability(const String myCap);
+     String getCapability();
      //
      void setCallback( int (*yourFunc)(int) ); // callback func for set
      void getCallback( int (*yourFunc)(int) ); // callback func for get
      //
 
      // To support multiple capabilities in an efficient manner
+     int setNode(AthomNode* myNode);
      AthomCapability* getPrev();
      int setPrev(AthomCapability* prevCapability);
      AthomCapability* getNext();
      int setNext(AthomCapability* nextCapability);
 
    private:
-     String _name;        // must be an exact match to a Homey capability
+     char _myCapability[MAX_CHARS_CLASS];
      bool _isSetable;     // true when callback attached
      bool _isGetable;     // true when callback attached
      int _lastSet;        // value of last set (from Homey)
@@ -53,6 +55,7 @@ class AthomDevice;
      int (*_getCallback) (int);   // get callback function
      AthomCapability* _prevCapability;
      AthomCapability* _nextCapability;
+     AthomNode* _myNode;  // Which node is this attached to
  };
 
 
@@ -123,8 +126,10 @@ class AthomDevice;
      String getClass();                // Retrieve Class of Device
 
      // capabilities
-     int addCapability(String myCapability); // Add a Capability to the Node
-     String getCapabilities();
+     int addCapability(const String myCapability); // Add a Capability to the Node
+     AthomCapability* getCapability(const int capNumber);
+     String getCapabilities(const int nodeId);
+     int countCapabilities();
 
      // actions
      int addAction(String myAction,  int (*yourFunc)(int)); // Add an Action to the Node
@@ -145,6 +150,7 @@ class AthomDevice;
    private:
      String _myName;
      char _myClass[MAX_CHARS_CLASS];
+     int _capabilityCount;
      AthomCapability* _firstCapability; // PTR to first capability
      AthomAction* _firstAction;         // PTR to first action
      AthomNode* _prevNode;              //PTR to previous Node
@@ -156,7 +162,7 @@ class AthomDevice;
   class AthomDevice
   {
     public:
-      AthomDevice();                    // Constructor
+      AthomDevice();
       int setName(const String myName);       // Set Name of Device
       String getName();                 // Retrieve Name of Device
 
@@ -166,15 +172,26 @@ class AthomDevice;
       String listNodes();                 // Get a list of Node TODO:PTR to array
       int countNodes();                  // Returns the number of nodes
       AthomNode* getNode(const int nodeNumber);
+      String getClass(const int nodeId); // get the class of node x
+
+      // capabilities
+      int addCapability(const int nodeId, const String myCapability);
+      String getCapability(const int nodeNumber, const int capNumber);
+      int countCapabilities(const int nodeId);
 
       // Registration of vars and functions with Particle Cloud
-      int registerCloud();                    // Must be called in Setup()
+      int initCloud();                    // Must be called in Setup()
 
 
     private:
-      String _myName;
+      char _myName[MAX_CHARS_NAME];
       AthomNode* _firstNode;              // PTR to first node
       int _nodeCount;
+      int _updateHomeyClass();
+      int _updateHomeyCaps();
+      int _updateHomeyConfs();
+      int _updateHomeyActs();
+      int _updateHomeySend();
 
       // Cloud variables we will expose
       int _myHomeyAPI;                     // We use as boolean
