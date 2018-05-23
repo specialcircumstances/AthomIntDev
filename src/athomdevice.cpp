@@ -122,9 +122,66 @@ JsonWriterStatic<622> jsonwriter;
    return 0;
  }
 
- AthomAction::AthomAction() {          // Class Constructor
-
+ void AthomCapability::setCallback( int (*yourFunc)(int) ) {
+   _setCallback = yourFunc;
+   _isSetable = true;
  }
+
+ int AthomCapability::doSet(const int myValue) {
+   if (_isSetable) {
+     return _setCallback(myValue);
+   } else {
+     return -1;
+   }
+ }
+
+ void AthomCapability::getCallback( int (*yourFunc)(int) ) {
+   _getCallback = yourFunc;
+   _isGetable = true;
+ }
+
+ int AthomCapability::doGet(const int myValue) {
+   if (_isGetable) {
+     return _getCallback(myValue);
+   } else {
+     return -1;
+   }
+ }
+
+
+
+ // ******************************************************
+
+ AthomAction::AthomAction(const String myName, int (*yourFunc)(int)) {
+   // Pass a name and a function to call
+   _isUsable = false;
+   setName(myName);
+   setCallback(yourFunc);
+ }
+
+
+ int AthomAction::setName(const String actionName) {
+   // TODO: Check name is unique
+   _actionName = actionName;
+   return 0;
+ }
+
+
+ String AthomAction::getName() {
+   // Is currently a String
+   return _actionName;
+ }
+
+
+ void AthomAction::setCallback( int (*yourFunc)(int) ) {
+   _actionCallback = yourFunc;
+ }
+
+ int AthomAction::doAction(const int myValue) {
+   return _actionCallback(myValue);
+ }
+
+// ***************************************************
 
  AthomTrigger::AthomTrigger() {       // Class Constructor
 
@@ -190,31 +247,34 @@ JsonWriterStatic<622> jsonwriter;
 
  int AthomNode::addCapability(const String myCap){
    int capabilityCount = 0;
-   if (athomIsCapability(myCap)) {
-     AthomCapability* newCap = new AthomCapability(myCap);
-     // TODO: check for malloc fail??
-     if (_firstCapability==nullptr) {
-       _firstCapability=newCap;
-       capabilityCount=1;
-     } else {
-       AthomCapability* next = _firstCapability;
-       AthomCapability* last = _firstCapability;
-       while (next!=nullptr) {
-         last = next;
-         next = last->getNext();
-         capabilityCount++;
-       }
-       newCap->setPrev(last);
-       last->setNext(newCap);
+   if (findCapability(myCap)!=0) {
+     return -1; // duplicate or does not exist
+   } // duplicate
+
+   AthomCapability* newCap = new AthomCapability(myCap);
+   // TODO: check for malloc fail??
+   if (_firstCapability==nullptr) {
+     _firstCapability=newCap;
+     capabilityCount=1;
+   } else {
+     AthomCapability* next = _firstCapability;
+     AthomCapability* last = _firstCapability;
+     while (next!=nullptr) {
+       last = next;
+       next = last->getNext();
        capabilityCount++;
      }
-     // Tell the capability who it's parent is
-     newCap->setNode(this);
-     // Store count of nodes.
-     _capabilityCount = capabilityCount;
-     // Update Cloud variable
-     // parent - _updateHomeyCaps();
+     newCap->setPrev(last);
+     last->setNext(newCap);
+     capabilityCount++;
    }
+   // Tell the capability who it's parent is
+   newCap->setNode(this);
+   // Store count of nodes.
+   _capabilityCount = capabilityCount;
+   // Update Cloud variable
+   // parent - _updateHomeyCaps();
+
    return capabilityCount;
  }
 
@@ -246,6 +306,33 @@ JsonWriterStatic<622> jsonwriter;
  // How many capabilities do we have
  int AthomNode::countCapabilities() {
    return _capabilityCount;
+ }
+
+
+ // Check if a Capability exists, return 0 for no, or capaility ID
+ int AthomNode::findCapability(const String myCap) {
+   int capabilityCount = 0;
+   if (athomIsCapability(myCap)) {
+     if (_firstCapability == nullptr) {
+       // No capabilities
+       return 0;
+     } else {
+       // Step through capabilities
+       AthomCapability* next = _firstCapability;
+       AthomCapability* last = _firstCapability;
+       while (next!=nullptr) {
+         capabilityCount++;
+         if (next->getCapability().compareTo(myCap)==0) {
+           return capabilityCount;
+         }
+         last = next;
+         next = last->getNext();
+       }
+       return 0; // Not found
+     }
+   } else {
+     return -1; // No such capability
+   }
  }
 
 
@@ -428,12 +515,27 @@ String AthomDevice::getCapability(const int nodeNumber, const int capNumber) {
   }
 }
 
+
 int AthomDevice::countCapabilities(const int nodeNumber) {
   AthomNode* myNode = getNode(nodeNumber);
   if (myNode != nullptr) {
       return myNode->countCapabilities();
   } else {
     return 0;
+  }
+}
+
+
+int AthomDevice::findCapability(const int nodeNumber, const String myCap) {
+  // returns the capability id of a particular capability
+  //  0 is capability not found
+  // -1 is bad capability
+  // -2 is node not found
+  AthomNode* myNode = getNode(nodeNumber);
+  if (myNode != nullptr) {
+      return myNode->findCapability(myCap);
+  } else {
+    return -2;
   }
 }
 
@@ -465,13 +567,15 @@ int AthomDevice::_updateHomeyCaps() {
     jsonwriter.init();   // CLear buffer
     JsonWriterAutoObject obj(&jsonwriter);
     for (int i = 1; i <= _nodeCount; i++) {
-      String nodeCaps = "";
+      //String nodeCaps = "";
+      jsonwriter.insertKeyArray(String(i));
       int numCaps = countCapabilities(i);
       for (int c = 1; c <= numCaps; c++) {
-        nodeCaps+= getCapability(i,c);
-        if (c < numCaps) {nodeCaps+= ",";}
+        //nodeCaps+= getCapability(i,c);
+        //if (c < numCaps) {nodeCaps+= ",";}
+        jsonwriter.insertArrayValue(getCapability(i,c));
       }
-      jsonwriter.insertKeyValue(String(i), nodeCaps);
+      jsonwriter.finishObjectOrArray();
     }
   }
   // assign to myHomeyCaps
@@ -486,8 +590,48 @@ int AthomDevice::_myHomeyConf(const String message) {
 
 
 int AthomDevice::_myHomeyGet(const String message) {
-   Serial.println("myHomeyGet Called");
-   return 1;
+  // This function decodes the received message
+  // message is limited to 63 characters
+  // The request will be in JSON format, with node and capability
+  // identified. Note that the GET doesn't return the data,
+  // rather it triggers a report to be sent.
+  //
+  //    {
+  //      "n": "nodeid",
+  //      "c": "capability_name"
+  //    }
+  //0         1         2         3         4         5         6
+  // 123456789012345678901234567890123456789012345678901234567890123
+  //
+  debug("myHomeyGet Called");
+  int nodeId = 0;
+  String myCapability = "";
+  // We need to
+  // Decode JSON to node and capability
+  jsonparser.clear();
+  jsonparser.addString(message);
+
+  if (jsonparser.parse()) {
+    // Looks valid (we received all parts)
+    jsonparser.getOuterValueByKey("n", myCapability); //reuse String
+    nodeId = myCapability.toInt();
+    jsonparser.getOuterValueByKey("c", myCapability);
+  } else {
+    // bad data
+    return -1;
+  }
+  // Check node and capability exist (return -1 if not)
+  int capId = findCapability(nodeId, myCapability);
+  if (capId < 1) {
+    return -1;
+  }
+  // Check the capability isGetable
+  return capId; //test
+  // Call the function and check it's result (pass that back)
+  //   we need to wrap in a timeout
+  // Trigger a report.
+
+  return 1;
 }
 
 int AthomDevice::_myHomeySet(const String message) {

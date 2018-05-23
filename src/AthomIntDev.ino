@@ -93,6 +93,8 @@ void setup() {
  debugint(myDevice.addCapability(1,"light_hue"));
  debug("Adding same capability, different node, good class");
  debugint(myDevice.addCapability(2,"thermostat_mode"));
+ debug("Adding same capability, same node, same class");
+ debugint(myDevice.addCapability(2,"thermostat_mode"));
  debug("Checking first class of nodes 1-3.");
  debug(myDevice.getCapability(1,1));
  debug(myDevice.getCapability(2,1));
@@ -105,7 +107,9 @@ void setup() {
  debug(myDevice.getCapability(3,56));
  debug("Checking non existant class of non existant node.");
  debug(myDevice.getCapability(34,56));
- 
+ debug("Find class by node and name. 3. dim");
+ debugint(myDevice.findCapability(3,"dim"));
+
 }
 
 

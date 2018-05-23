@@ -37,6 +37,8 @@ class AthomDevice;
      void setCallback( int (*yourFunc)(int) ); // callback func for set
      void getCallback( int (*yourFunc)(int) ); // callback func for get
      //
+     int doSet(const int myValue);
+     int doGet(const int myValue);
 
      // To support multiple capabilities in an efficient manner
      int setNode(AthomNode* myNode);
@@ -62,26 +64,29 @@ class AthomDevice;
  class AthomAction        // Something we can do in response to a Flow
  {
    public:
-     AthomAction(); // Constructor
+     AthomAction(const String actionName, int (*yourFunc)(int)); // Constructor
      // Get and set capability name
-     int setName(String actionName);
+     int setName(const String actionName);
      String getName();
      //
-     void actionCallback( int (*yourFunc)(int) ); // callback func for action
+     void setCallback( int (*yourFunc)(int) ); // callback func for action
      //
+     int doAction(const int myValue);       // trigger function from Homey
 
      // To support multiple actions in an efficient manner
+     int setNode(AthomNode* myNode);
      AthomAction* getPrev();
      int setPrev(AthomAction* prevAction);
      AthomAction* getNext();
      int setNext(AthomAction* nextAction);
 
    private:
-     String _name;        // Name of the action
+     String _actionName;        // Name of the action
      bool _isUsable;     // true when callback attached
      int (*_actionCallback) (int);   // action callback function
      AthomAction* _prevAction;
      AthomAction* _nextAction;
+     AthomNode* _myNode;  // Which node is this attached to
  };
 
 
@@ -128,8 +133,9 @@ class AthomDevice;
      // capabilities
      int addCapability(const String myCapability); // Add a Capability to the Node
      AthomCapability* getCapability(const int capNumber);
-     String getCapabilities(const int nodeId);
+     //String getCapabilities(const int nodeId);
      int countCapabilities();
+     int findCapability(const String myCapability); // Check if capability exists
 
      // actions
      int addAction(String myAction,  int (*yourFunc)(int)); // Add an Action to the Node
@@ -168,8 +174,8 @@ class AthomDevice;
 
       // nodes
       int addNode(const String nodeClass);        // Add a Node to the Device
-      int deleteNode(const int nodeId);     // Delete a Node from the Device
-      String listNodes();                 // Get a list of Node TODO:PTR to array
+      //int deleteNode(const int nodeId);     // Delete a Node from the Device
+      //String listNodes();                 // Get a list of Node TODO:PTR to array
       int countNodes();                  // Returns the number of nodes
       AthomNode* getNode(const int nodeNumber);
       String getClass(const int nodeId); // get the class of node x
@@ -178,10 +184,7 @@ class AthomDevice;
       int addCapability(const int nodeId, const String myCapability);
       String getCapability(const int nodeNumber, const int capNumber);
       int countCapabilities(const int nodeId);
-
-      // Registration of vars and functions with Particle Cloud
-      int initCloud();                    // Must be called in Setup()
-
+      int findCapability(const int nodeId, const String myCapability);
 
     private:
       char _myName[MAX_CHARS_NAME];
