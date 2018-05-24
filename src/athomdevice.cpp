@@ -75,23 +75,23 @@ JsonWriterStatic<622> jsonwriter;
    _prevCapability = nullptr;
    _nextCapability = nullptr;
    _myNode = nullptr;
-   setCapability(myCap);
+   setName(myCap);
  }
 
- int AthomCapability::setCapability(const String myCap) {
+ int AthomCapability::setName(const String myCap) {
    // Sometimes this might be validated
    // Sometimes not...
    if (athomIsCapability(myCap)) {
      // Store to private variable
-     myCap.toCharArray(_myCapability,MAX_CHARS_CAPABILITY);
+     myCap.toCharArray(_myName,MAX_CHARS_CAPABILITY);
      return 0;
    }
    return -1;
  }
 
- String AthomCapability::getCapability() {
+ String AthomCapability::getName() {
    // convert to String and return
-   String rStr = _myCapability;
+   String rStr = _myName;
    return rStr;
  }
 
@@ -122,7 +122,7 @@ JsonWriterStatic<622> jsonwriter;
    return 0;
  }
 
- void AthomCapability::setCallback( int (*yourFunc)(int) ) {
+ void AthomCapability::setSetCallback( int (*yourFunc)(int) ) {
    _setCallback = yourFunc;
    _isSetable = true;
  }
@@ -135,7 +135,11 @@ JsonWriterStatic<622> jsonwriter;
    }
  }
 
- void AthomCapability::getCallback( int (*yourFunc)(int) ) {
+ bool AthomCapability::isGetable() {
+   return _isGetable;
+ }
+
+ void AthomCapability::setGetCallback( int (*yourFunc)(int) ) {
    _getCallback = yourFunc;
    _isGetable = true;
  }
@@ -146,6 +150,10 @@ JsonWriterStatic<622> jsonwriter;
    } else {
      return -1;
    }
+ }
+
+ bool AthomCapability::isSetable() {
+   return _isSetable;
  }
 
 
@@ -247,7 +255,7 @@ JsonWriterStatic<622> jsonwriter;
 
  int AthomNode::addCapability(const String myCap){
    int capabilityCount = 0;
-   if (findCapability(myCap)!=0) {
+   if (findCapabilityByName(myCap)!=0) {
      return -1; // duplicate or does not exist
    } // duplicate
 
@@ -310,7 +318,7 @@ JsonWriterStatic<622> jsonwriter;
 
 
  // Check if a Capability exists, return 0 for no, or capaility ID
- int AthomNode::findCapability(const String myCap) {
+ int AthomNode::findCapabilityByName(const String myCap) {
    int capabilityCount = 0;
    if (athomIsCapability(myCap)) {
      if (_firstCapability == nullptr) {
@@ -322,7 +330,8 @@ JsonWriterStatic<622> jsonwriter;
        AthomCapability* last = _firstCapability;
        while (next!=nullptr) {
          capabilityCount++;
-         if (next->getCapability().compareTo(myCap)==0) {
+         //debug(next->getName());
+         if (next->getName().compareTo(myCap)==0) {
            return capabilityCount;
          }
          last = next;
@@ -351,6 +360,7 @@ JsonWriterStatic<622> jsonwriter;
    _myHomeyConfs = "";
    _myHomeyActs = "";
    _myHomeySend = "";
+   _lastReport = millis();
    int errors = 0;  // TODO do something with this
    if (Particle.variable("HomeyAPI", _myHomeyAPI)==false)
    {
@@ -501,17 +511,27 @@ int AthomDevice::addCapability(const int nodeId, const String myCapability) {
   }
 }
 
-String AthomDevice::getCapability(const int nodeNumber, const int capNumber) {
+AthomCapability* AthomDevice::getCapability(const int nodeNumber, const int capNumber) {
   AthomNode* myNode = getNode(nodeNumber);
   if (myNode != nullptr) {
     AthomCapability* myCap = myNode->getCapability(capNumber);
     if (myCap != nullptr) {
-      return myCap->getCapability();
+      return myCap;
     } else {
-      return "capability_not_found";
+      return nullptr;
     }
   } else {
-    return "node_not_found";
+    return nullptr;
+  }
+}
+
+
+String AthomDevice::getCapabilityName(const int nodeNumber, const int capNumber) {
+  AthomCapability* myCap = getCapability(nodeNumber, capNumber);
+  if (myCap != nullptr) {
+    return myCap->getName();
+  } else {
+    return "capability_not_found";
   }
 }
 
@@ -526,18 +546,38 @@ int AthomDevice::countCapabilities(const int nodeNumber) {
 }
 
 
-int AthomDevice::findCapability(const int nodeNumber, const String myCap) {
+int AthomDevice::findCapabilityByName(const int nodeNumber, const String myCap) {
   // returns the capability id of a particular capability
   //  0 is capability not found
   // -1 is bad capability
   // -2 is node not found
   AthomNode* myNode = getNode(nodeNumber);
   if (myNode != nullptr) {
-      return myNode->findCapability(myCap);
+      return myNode->findCapabilityByName(myCap);
   } else {
+    //debug("Node not found" + String(nodeNumber));
     return -2;
   }
 }
+
+void AthomDevice::setCapabilityGetCallback(const int nodeId, const String myCapability, int (*yourFunc)(int) ) {
+  // TODO Add return values
+  int myCapId = findCapabilityByName(nodeId, myCapability);
+  if (myCapId > 0) {
+    AthomCapability* myCap = getCapability(nodeId, myCapId);
+    myCap->setGetCallback(yourFunc);
+  }
+}
+
+void AthomDevice::setCapabilitySetCallback(const int nodeId, const String myCapability, int (*yourFunc)(int) ) {
+  // TODO Add return values
+  int myCapId = findCapabilityByName(nodeId, myCapability);
+  if (myCapId > 0) {
+    AthomCapability* myCap = getCapability(nodeId, myCapId);
+    myCap->setSetCallback(yourFunc);
+  }
+}
+
 
 
 int AthomDevice::_updateHomeyClass() {
@@ -545,8 +585,8 @@ int AthomDevice::_updateHomeyClass() {
   // Need to create a String containing JSON
   // Write array to cloud variable as JSON
   // jsonwriter is scoped to support it's autobject
+  jsonwriter.init();   // CLear buffer
   {
-    jsonwriter.init();   // CLear buffer
     JsonWriterAutoObject obj(&jsonwriter);
     for (int i = 1; i <= _nodeCount; i++) {
 
@@ -563,8 +603,8 @@ int AthomDevice::_updateHomeyCaps() {
   // Need to create a String containing JSON
   // Write array to cloud variable as JSON
   // jsonwriter is scoped to support it's autobject
+  jsonwriter.init();   // CLear buffer
   {
-    jsonwriter.init();   // CLear buffer
     JsonWriterAutoObject obj(&jsonwriter);
     for (int i = 1; i <= _nodeCount; i++) {
       //String nodeCaps = "";
@@ -573,7 +613,7 @@ int AthomDevice::_updateHomeyCaps() {
       for (int c = 1; c <= numCaps; c++) {
         //nodeCaps+= getCapability(i,c);
         //if (c < numCaps) {nodeCaps+= ",";}
-        jsonwriter.insertArrayValue(getCapability(i,c));
+        jsonwriter.insertArrayValue(getCapabilityName(i,c));
       }
       jsonwriter.finishObjectOrArray();
     }
@@ -602,7 +642,7 @@ int AthomDevice::_myHomeyGet(const String message) {
   //    }
   //0         1         2         3         4         5         6
   // 123456789012345678901234567890123456789012345678901234567890123
-  //
+  // {"n": "nodeid","c": "capability_name"}
   debug("myHomeyGet Called");
   int nodeId = 0;
   String myCapability = "";
@@ -618,19 +658,28 @@ int AthomDevice::_myHomeyGet(const String message) {
     jsonparser.getOuterValueByKey("c", myCapability);
   } else {
     // bad data
+    debug("WARNING: Bad Data");
     return -1;
   }
   // Check node and capability exist (return -1 if not)
-  int capId = findCapability(nodeId, myCapability);
+  int capId = findCapabilityByName(nodeId, myCapability);
   if (capId < 1) {
+    debug("WARNING: Capability Not Found: " + myCapability);
+    return capId;
+  }
+  // Get the capability
+  AthomCapability* myCap = getCapability(nodeId,capId);
+  // Check the capability isGetable
+  if (!myCap->isGetable()) {
+    debug("WARNING: Capability Not Gettable");
     return -1;
   }
-  // Check the capability isGetable
-  return capId; //test
   // Call the function and check it's result (pass that back)
-  //   we need to wrap in a timeout
+  int result = myCap->doGet(1);
+  debugint(result);
+  // TODO: we need to wrap in a timeout, if poss
   // Trigger a report.
-
+  _sendReport(nodeId, myCapability, result);
   return 1;
 }
 
@@ -649,4 +698,37 @@ int AthomDevice::_myHomeyAct(const String message) {
 int AthomDevice::_myHomeyRecv(const String message) {
    Serial.println("myHomeySend Called");
    return 1;
+}
+
+void AthomDevice::_sendReport(const int nodeId, const String myCap, const int value) {
+  // OK now, to be clear, this is kind of blocking
+  // Particle Cloud rate limits events to 1 Hz
+  // So, to keep things under control, we wait
+  // here, until at least a second since the last report
+  // Build the data set first
+  // As private function, input is assumed good
+  // TODO is this a good place to shift decimals?
+  JsonWriterStatic<250> reportJw;
+  //debug("REPORT capability is: " + myCap);
+  //debug("REPORT node is: " + String(nodeId));
+  //debug("REPORT value is: " + String(value));
+  //jsonwriter.init();   // CLear buffer
+  //reportJw.startArray();  // neater
+  reportJw.startObject();
+  reportJw.insertKeyObject(String(nodeId));
+  reportJw.insertKeyValue(myCap, String(value));
+  reportJw.finishObjectOrArray();
+  reportJw.finishObjectOrArray();
+  //reportJw.finishObjectOrArray();
+  // assign to myHomeyCaps
+  //debug("Checking frequency...");
+  while ( millis()-_lastReport < 1000) {
+    delay(100); // lower load than process() due to while
+    //debug("WAIT!");
+  }
+  //debug("Done waiting.");
+  //String data = String(reportJw.getBuffer());
+  //debug(reportJw.getBuffer());
+  Particle.publish("Homey", reportJw.getBuffer(), PRIVATE);
+  _lastReport = millis();
 }

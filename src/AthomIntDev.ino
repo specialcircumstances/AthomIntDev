@@ -26,6 +26,11 @@ void debugint(const int message) {
   debug(String("INT: " + num));
 }
 
+int TestCallBack(const int inputVal) {
+  debug("Test Callback Called OK - " + String(inputVal));
+  return 180;
+}
+
 void setup() {
  Serial.begin(9600);
  while(!Serial.isConnected()) Particle.process();
@@ -96,20 +101,21 @@ void setup() {
  debug("Adding same capability, same node, same class");
  debugint(myDevice.addCapability(2,"thermostat_mode"));
  debug("Checking first class of nodes 1-3.");
- debug(myDevice.getCapability(1,1));
- debug(myDevice.getCapability(2,1));
- debug(myDevice.getCapability(3,1));
+ debug(myDevice.getCapabilityName(1,1));
+ debug(myDevice.getCapabilityName(2,1));
+ debug(myDevice.getCapabilityName(3,1));
  debug("Checking first class of non existant node.");
- debug(myDevice.getCapability(4,1));
+ debug(myDevice.getCapabilityName(4,1));
  debug("Checking non existant class of first node.");
- debug(myDevice.getCapability(1,56));
+ debug(myDevice.getCapabilityName(1,56));
  debug("Checking non existant class of last node.");
- debug(myDevice.getCapability(3,56));
+ debug(myDevice.getCapabilityName(3,56));
  debug("Checking non existant class of non existant node.");
- debug(myDevice.getCapability(34,56));
- debug("Find class by node and name. 3. dim");
- debugint(myDevice.findCapability(3,"dim"));
-
+ debug(myDevice.getCapabilityName(34,56));
+ debug("Find capability by node and name. 3. dim");
+ debugint(myDevice.findCapabilityByName(3,"dim"));
+ debug("Set Callback Method for Node 3, Dim, Get");
+ myDevice.setCapabilityGetCallback(3,"dim",TestCallBack);
 }
 
 

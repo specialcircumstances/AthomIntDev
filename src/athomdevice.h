@@ -31,14 +31,16 @@ class AthomDevice;
    public:
      AthomCapability(const String myCap); // Constructor
      // Get and set capability name
-     int setCapability(const String myCap);
-     String getCapability();
+     int setName(const String myCap);
+     String getName();
      //
-     void setCallback( int (*yourFunc)(int) ); // callback func for set
-     void getCallback( int (*yourFunc)(int) ); // callback func for get
+     void setSetCallback( int (*yourFunc)(int) ); // callback func for set
+     void setGetCallback( int (*yourFunc)(int) ); // callback func for get
      //
      int doSet(const int myValue);
      int doGet(const int myValue);
+     bool isGetable();
+     bool isSetable();
 
      // To support multiple capabilities in an efficient manner
      int setNode(AthomNode* myNode);
@@ -48,7 +50,7 @@ class AthomDevice;
      int setNext(AthomCapability* nextCapability);
 
    private:
-     char _myCapability[MAX_CHARS_CLASS];
+     char _myName[MAX_CHARS_CLASS];
      bool _isSetable;     // true when callback attached
      bool _isGetable;     // true when callback attached
      int _lastSet;        // value of last set (from Homey)
@@ -58,6 +60,7 @@ class AthomDevice;
      AthomCapability* _prevCapability;
      AthomCapability* _nextCapability;
      AthomNode* _myNode;  // Which node is this attached to
+
  };
 
 
@@ -135,7 +138,7 @@ class AthomDevice;
      AthomCapability* getCapability(const int capNumber);
      //String getCapabilities(const int nodeId);
      int countCapabilities();
-     int findCapability(const String myCapability); // Check if capability exists
+     int findCapabilityByName(const String myCapability); // Check if capability exists
 
      // actions
      int addAction(String myAction,  int (*yourFunc)(int)); // Add an Action to the Node
@@ -182,9 +185,14 @@ class AthomDevice;
 
       // capabilities
       int addCapability(const int nodeId, const String myCapability);
-      String getCapability(const int nodeNumber, const int capNumber);
+      AthomCapability* getCapability(const int nodeNumber, const int capNumber);
+      String getCapabilityName(const int nodeNumber, const int capNumber);
       int countCapabilities(const int nodeId);
-      int findCapability(const int nodeId, const String myCapability);
+      int findCapabilityByName(const int nodeId, const String myCapability);
+
+      void setCapabilityGetCallback(const int nodeId, const String myCapability, int (*yourFunc)(int) );
+      void setCapabilitySetCallback(const int nodeId, const String myCapability, int (*yourFunc)(int) );
+
 
     private:
       char _myName[MAX_CHARS_NAME];
@@ -210,6 +218,10 @@ class AthomDevice;
       int _myHomeySet(String message);
       int _myHomeyAct(String message);
       int _myHomeyRecv(String message); // A query channel ?????
+
+      unsigned long _lastReport; // Last report based on millis()
+      void _sendReport(const int nodeId, const String myCap, const int value);
+
 
   };
 
