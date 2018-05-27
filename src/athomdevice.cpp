@@ -8,13 +8,15 @@
  * internally.
  */
 
- #include "athomdevice.h"
+#include "athomdevice.h"
 
 // Library Global Objects
 // We will often need these so lets reuse these ones throughout
 // JSON lib included in athomdevice.h
-JsonParserStatic<622, 20> jsonparser;
-JsonWriterStatic<622> jsonwriter;
+//JsonParserStatic<622, 20> jsonparser;
+//JsonWriterStatic<622> jsonwriter;
+
+// Does not appear to clear/init properly
 
 // Helper Functions
   static void debug(const String message) {
@@ -68,10 +70,15 @@ JsonWriterStatic<622> jsonwriter;
  AthomCapability::AthomCapability(const String myCap) {  // Class Constructor
    _isSetable = false;
    _isGetable = false;
-   _lastSet = 0;
-   _lastGet = 0;
-   _setCallback = nullptr;
-   _getCallback = nullptr;
+   _isInt = false;
+   _isFloat = false;
+   _isBool = false;
+   _setCallbacki = nullptr;
+   _setCallbackf = nullptr;
+   _setCallbackb = nullptr;
+   _getCallbacki = nullptr;
+   _getCallbackf = nullptr;
+   _getCallbackb = nullptr;
    _prevCapability = nullptr;
    _nextCapability = nullptr;
    _myNode = nullptr;
@@ -122,16 +129,161 @@ JsonWriterStatic<622> jsonwriter;
    return 0;
  }
 
- void AthomCapability::setSetCallback( int (*yourFunc)(int) ) {
-   _setCallback = yourFunc;
+ int AthomCapability::setSetCallback( int (*yourFunc)(int) ) {
+   if (_isGetable && (_isFloat || _isBool)) {
+     // Get and set type must match
+     return -1;
+   }
+   _setCallbacki = yourFunc;
+   _setCallbackf = nullptr;
+   _setCallbackb = nullptr;
+   _isInt = true;
+   _isFloat = false;
+   _isBool = false;
    _isSetable = true;
+   return 0;
+ }
+
+ int AthomCapability::setSetCallback( float (*yourFunc)(float) ) {
+   if (_isGetable && (_isInt || _isBool)) {
+     // Get and set type must match
+     return -1;
+   }
+   _setCallbackf = yourFunc;
+   _setCallbacki = nullptr;
+   _setCallbackb = nullptr;
+   _isInt = false;
+   _isFloat = true;
+   _isBool = false;
+   _isSetable = true;
+   return 0;
+ }
+
+ int AthomCapability::setSetCallback( bool (*yourFunc)(bool) ) {
+   if (_isGetable && (_isFloat || _isInt)) {
+     // Get and set type must match
+     return -1;
+   }
+   _setCallbackb = yourFunc;
+   _setCallbackf = nullptr;
+   _setCallbackb = nullptr;
+   _isInt = false;
+   _isFloat = false;
+   _isBool = true;
+   _isSetable = true;
+   return 0;
  }
 
  int AthomCapability::doSet(const int myValue) {
-   if (_isSetable) {
-     return _setCallback(myValue);
+   if (_isInt) {
+     return _setCallbacki(myValue);
    } else {
      return -1;
+   }
+ }
+
+ float AthomCapability::doSet(const float myValue) {
+   if (_isFloat) {
+     return _setCallbackf(myValue);
+   } else {
+     return -1;
+   }
+ }
+
+ bool AthomCapability::doSet(const bool myValue) {
+   if (_isBool) {
+     return _setCallbackb(myValue);
+   } else {
+     return false;
+   }
+ }
+
+ bool AthomCapability::isSetable() {
+   return _isSetable;
+ }
+
+ int AthomCapability::setGetCallback( int (*yourFunc)() ) {
+   if (_isSetable && (_isFloat || _isBool)) {
+     // Get and set type must match
+     return -1;
+   }
+   _getCallbacki = yourFunc;
+   _getCallbackf = nullptr;
+   _getCallbackb = nullptr;
+   _isInt = true;
+   _isFloat = false;
+   _isBool = false;
+   _isGetable = true;
+   return 0;
+ }
+
+ int AthomCapability::setGetCallback( float (*yourFunc)() ) {
+   if (_isSetable && (_isInt || _isBool)) {
+     // Get and set type must match
+     return -1;
+   }
+   _getCallbackf = yourFunc;
+   _getCallbacki = nullptr;
+   _getCallbackb = nullptr;
+   _isInt = false;
+   _isFloat = true;
+   _isBool = false;
+   _isGetable = true;
+   return 0;
+ }
+
+ int AthomCapability::setGetCallback( bool (*yourFunc)() ) {
+   if (_isSetable && (_isInt || _isFloat)) {
+     // Get and set type must match
+     return -1;
+   }
+   _getCallbackb = yourFunc;
+   _getCallbacki = nullptr;
+   _getCallbackf = nullptr;
+   _isInt = false;
+   _isFloat = false;
+   _isBool = true;
+   _isGetable = true;
+   return 0;
+ }
+
+ int AthomCapability::doGet(const int myValue) {
+   // Value is ignored for Get, just overloading
+   return doGetInt();
+ }
+
+  int AthomCapability::doGetInt() {
+    // Value is ignored for Get
+    if (_isGetable && _isInt) {
+      return _getCallbacki();
+    } else {
+      return -1;
+    }
+  }
+
+  float AthomCapability::doGet(const float myValue) {
+    // Value is ignored for Get, just overloading
+    return doGetFloat();
+  }
+
+ float AthomCapability::doGetFloat() {
+   if (_isGetable && _isFloat) {
+     return _getCallbackf();
+   } else {
+     return -1.0;
+   }
+ }
+
+ bool AthomCapability::doGet(const bool myValue) {
+   // Value is ignored for Get, just overloading
+   return doGetBool();
+ }
+
+ bool AthomCapability::doGetBool() {
+   if (_isGetable && _isBool) {
+     return _getCallbackb();
+   } else {
+     return NULL;
    }
  }
 
@@ -139,21 +291,16 @@ JsonWriterStatic<622> jsonwriter;
    return _isGetable;
  }
 
- void AthomCapability::setGetCallback( int (*yourFunc)(int) ) {
-   _getCallback = yourFunc;
-   _isGetable = true;
+ bool AthomCapability::isInt() {
+   return _isInt;
  }
 
- int AthomCapability::doGet(const int myValue) {
-   if (_isGetable) {
-     return _getCallback(myValue);
-   } else {
-     return -1;
-   }
+ bool AthomCapability::isFloat() {
+   return _isFloat;
  }
 
- bool AthomCapability::isSetable() {
-   return _isSetable;
+ bool AthomCapability::isBool() {
+   return _isBool;
  }
 
 
@@ -560,7 +707,7 @@ int AthomDevice::findCapabilityByName(const int nodeNumber, const String myCap) 
   }
 }
 
-void AthomDevice::setCapabilityGetCallback(const int nodeId, const String myCapability, int (*yourFunc)(int) ) {
+void AthomDevice::setCapabilityGetCallback(const int nodeId, const String myCapability, int (*yourFunc)() ) {
   // TODO Add return values
   int myCapId = findCapabilityByName(nodeId, myCapability);
   if (myCapId > 0) {
@@ -584,17 +731,16 @@ int AthomDevice::_updateHomeyClass() {
   // This to update Cloud Vars
   // Need to create a String containing JSON
   // Write array to cloud variable as JSON
-  // jsonwriter is scoped to support it's autobject
-  jsonwriter.init();   // CLear buffer
-  {
-    JsonWriterAutoObject obj(&jsonwriter);
-    for (int i = 1; i <= _nodeCount; i++) {
-
-      jsonwriter.insertKeyValue(String(i), getClass(i));
-    }
+  DynamicJsonBuffer jsonbuffer(622);
+  JsonObject& root = jsonbuffer.createObject();
+  for (int i = 1; i <= _nodeCount; i++) {
+    //glob_JsonBuffer.insertKeyValue(String(i), getClass(i));
+    root[String(i)] = getClass(i);
   }
   // assign to myHomeyClass
-  _myHomeyClass = jsonwriter.getBuffer();
+  _myHomeyClass = "";
+  root.printTo(_myHomeyClass);
+  //_myHomeyClass = jsonwriter.getBuffer();
 }
 
 
@@ -603,23 +749,26 @@ int AthomDevice::_updateHomeyCaps() {
   // Need to create a String containing JSON
   // Write array to cloud variable as JSON
   // jsonwriter is scoped to support it's autobject
-  jsonwriter.init();   // CLear buffer
-  {
-    JsonWriterAutoObject obj(&jsonwriter);
-    for (int i = 1; i <= _nodeCount; i++) {
-      //String nodeCaps = "";
-      jsonwriter.insertKeyArray(String(i));
-      int numCaps = countCapabilities(i);
-      for (int c = 1; c <= numCaps; c++) {
-        //nodeCaps+= getCapability(i,c);
-        //if (c < numCaps) {nodeCaps+= ",";}
-        jsonwriter.insertArrayValue(getCapabilityName(i,c));
-      }
-      jsonwriter.finishObjectOrArray();
+  //JsonWriter jsonwriter;
+  //jsonwriter.init();   // CLear buffer
+  DynamicJsonBuffer jsonbuffer(622);
+  JsonObject& root = jsonbuffer.createObject();
+  for (int i = 1; i <= _nodeCount; i++) {
+    //String nodeCaps = "";
+    //jsonwriter.insertKeyArray(String(i));
+    JsonArray& node = root.createNestedArray(String(i));
+    int numCaps = countCapabilities(i);
+    for (int c = 1; c <= numCaps; c++) {
+      //nodeCaps+= getCapability(i,c);
+      //if (c < numCaps) {nodeCaps+= ",";}
+      //jsonwriter.insertArrayValue(getCapabilityName(i,c));
+      node.add(getCapabilityName(i,c));
     }
   }
   // assign to myHomeyCaps
-  _myHomeyCaps= jsonwriter.getBuffer();
+  //_myHomeyCaps= jsonwriter.getBuffer();
+  _myHomeyCaps = "";
+  root.printTo(_myHomeyCaps);
 }
 
 
@@ -644,18 +793,23 @@ int AthomDevice::_myHomeyGet(const String message) {
   // 123456789012345678901234567890123456789012345678901234567890123
   // {"n": "nodeid","c": "capability_name"}
   debug("myHomeyGet Called");
+  //JsonParserStatic<256, 64> jsonparser;
   int nodeId = 0;
   String myCapability = "";
   // We need to
   // Decode JSON to node and capability
-  jsonparser.clear();
-  jsonparser.addString(message);
+  DynamicJsonBuffer jsonbuffer(256);
+  //jsonparser.clear();
+  //jsonparser.addString(message);
+  JsonObject& root = jsonbuffer.parseObject(message);
 
-  if (jsonparser.parse()) {
+  if (root.success()) {
     // Looks valid (we received all parts)
-    jsonparser.getOuterValueByKey("n", myCapability); //reuse String
+    //jsonparser.getOuterValueByKey("n", myCapability); //reuse String
+    myCapability = root.get<String>("n");
     nodeId = myCapability.toInt();
-    jsonparser.getOuterValueByKey("c", myCapability);
+    //jsonparser.getOuterValueByKey("c", myCapability);
+    myCapability = root.get<String>("c");
   } else {
     // bad data
     debug("WARNING: Bad Data");
@@ -672,20 +826,90 @@ int AthomDevice::_myHomeyGet(const String message) {
   // Check the capability isGetable
   if (!myCap->isGetable()) {
     debug("WARNING: Capability Not Gettable");
-    return -1;
+    return -3;
   }
-  // Call the function and check it's result (pass that back)
-  int result = myCap->doGet(1);
-  debugint(result);
+  // Call the function
+  // See what sort of type we will return and act accordingly
+  if (myCap->isInt()) {
+    int result = myCap->doGetInt();
+    _sendReport(nodeId, myCapability, result);
+    return 1;
+  } else if (myCap->isFloat()) {
+    float result = myCap->doGetFloat();
+    _sendReport(nodeId, myCapability, result);
+    return 2;
+  } else if (myCap->isBool()) {
+    bool result = myCap->doGetBool();
+    _sendReport(nodeId, myCapability, result);
+    return 3;
+  }
   // TODO: we need to wrap in a timeout, if poss
-  // Trigger a report.
-  _sendReport(nodeId, myCapability, result);
-  return 1;
+  return -4;
 }
 
 int AthomDevice::_myHomeySet(const String message) {
-   Serial.println("myHomeySet Called");
-   return 1;
+  // Set a value via user provided function.
+  // User function must accept and return same type of variable
+  // int, float or bool.
+  // Return value should be the actual value that was set.
+  // This allows for limits.
+  // Set will also (as per GET) trigger a report of the resulting value
+  Serial.println("myHomeySet Called");
+  //JsonParserStatic<256, 64> jsonparser;
+  int nodeId = 0;
+  String myCapability = "";
+  String myValueStr = "";
+  // We need to
+  // Decode JSON to node and capability
+  DynamicJsonBuffer jsonbuffer(256);
+  JsonObject& root = jsonbuffer.parseObject(message);
+  //
+  if (root.success()) {
+   // Looks valid (we received all parts)
+    nodeId = root.get<int>("n");
+    myCapability = root.get<String>("c");
+    myValueStr =  root.get<String>("v");
+  } else {
+   // bad data
+   debug("WARNING: Bad Data");
+   return -1;
+  }
+  // TODO more validation of input
+  // Get Capability and check type for conversion
+  // Check node and capability exist (return -1 if not)
+  int capId = findCapabilityByName(nodeId, myCapability);
+  if (capId < 1) {
+    debug("WARNING: Capability Not Found: " + myCapability);
+    return capId;
+  }
+  // Get the capability
+  AthomCapability* myCap = getCapability(nodeId,capId);
+  // Check the capability isGetable
+  if (!myCap->isSetable()) {
+    debug("WARNING: Capability Not Settable");
+    return -3;
+  }
+  // Call the function
+  // See what sort of type we will return and act accordingly
+  if (myCap->isInt()) {
+    int result = myCap->doSet(int(myValueStr.toInt()));
+    _sendReport(nodeId, myCapability, result);
+    return 1;
+  } else if (myCap->isFloat()) {
+    float result = myCap->doSet(myValueStr.toFloat());
+    _sendReport(nodeId, myCapability, result);
+    return 2;
+  } else if (myCap->isBool()) {
+    bool myBool = false;
+    if (myValueStr == "true") {
+      myBool = true;
+    }
+    bool result = myCap->doSet(myBool);
+    _sendReport(nodeId, myCapability, result);
+    return 3;
+  }
+  // TODO: we need to wrap in a timeout, if poss
+  return -4;
 }
 
 
@@ -696,30 +920,42 @@ int AthomDevice::_myHomeyAct(const String message) {
 
 
 int AthomDevice::_myHomeyRecv(const String message) {
-   Serial.println("myHomeySend Called");
+   Serial.println("myHomeyRecv Called");
    return 1;
 }
 
 void AthomDevice::_sendReport(const int nodeId, const String myCap, const int value) {
+  String strValue = String(value);
+  _sendReport(nodeId, myCap, strValue);
+}
+
+void AthomDevice::_sendReport(const int nodeId, const String myCap, const float value) {
+  String strValue = String(value, 2); // e.g. a 2 place decimal number
+  _sendReport(nodeId, myCap, strValue);
+}
+
+void AthomDevice::_sendReport(const int nodeId, const String myCap, const bool value) {
+  bool strValue;
+  if (value) {
+    strValue = "true";
+  } else {
+    strValue = "false";
+  }
+  _sendReport(nodeId, myCap, strValue);
+}
+
+void AthomDevice::_sendReport(const int nodeId, const String myCap, const String value) {
   // OK now, to be clear, this is kind of blocking
   // Particle Cloud rate limits events to 1 Hz
   // So, to keep things under control, we wait
   // here, until at least a second since the last report
   // Build the data set first
   // As private function, input is assumed good
-  // TODO is this a good place to shift decimals?
-  JsonWriterStatic<250> reportJw;
-  //debug("REPORT capability is: " + myCap);
-  //debug("REPORT node is: " + String(nodeId));
-  //debug("REPORT value is: " + String(value));
-  //jsonwriter.init();   // CLear buffer
-  //reportJw.startArray();  // neater
-  reportJw.startObject();
-  reportJw.insertKeyObject(String(nodeId));
-  reportJw.insertKeyValue(myCap, String(value));
-  reportJw.finishObjectOrArray();
-  reportJw.finishObjectOrArray();
-  //reportJw.finishObjectOrArray();
+  DynamicJsonBuffer jsonbuffer(256);
+  JsonObject& root = jsonbuffer.createObject();
+  //
+  JsonObject& node = root.createNestedObject(String(nodeId));
+  node[myCap] = value;
   // assign to myHomeyCaps
   //debug("Checking frequency...");
   while ( millis()-_lastReport < 1000) {
@@ -727,8 +963,9 @@ void AthomDevice::_sendReport(const int nodeId, const String myCap, const int va
     //debug("WAIT!");
   }
   //debug("Done waiting.");
-  //String data = String(reportJw.getBuffer());
-  //debug(reportJw.getBuffer());
-  Particle.publish("Homey", reportJw.getBuffer(), PRIVATE);
+  String data = "";
+  root.printTo(data);
+  debug(data);
+  Particle.publish("Homey", data, PRIVATE);
   _lastReport = millis();
 }

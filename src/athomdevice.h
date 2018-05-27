@@ -9,8 +9,9 @@
 
 // #include "Arduino.h"
 #include "application.h"    // Need String at least
+#include "Arduino.h"      // Required for JSON lib
+#include "ArduinoJson.h"
 #include "athomdefs.h"
-#include "JsonParserGeneratorRK.h"
 
 // Bearing in mind that Homey has the following types:
 // Number, which is Decimal to two places.
@@ -34,13 +35,31 @@ class AthomDevice;
      int setName(const String myCap);
      String getName();
      //
-     void setSetCallback( int (*yourFunc)(int) ); // callback func for set
-     void setGetCallback( int (*yourFunc)(int) ); // callback func for get
+     int setSetCallback( int (*yourFunc)(int) ); // callback func for set
+     int setSetCallback( float (*yourFunc)(float) ); // callback func for set
+     int setSetCallback( bool (*yourFunc)(bool) ); // callback func for set
+     //
+     int setGetCallback( int (*yourFunc)() ); // callback func for get
+     int setGetCallback( float (*yourFunc)() ); // callback func for get
+     int setGetCallback( bool (*yourFunc)() ); // callback func for get
      //
      int doSet(const int myValue);
+     float doSet(const float myValue);
+     bool doSet(const bool myValue);
      int doGet(const int myValue);
+     int doGetInt();
+     float doGet(const float myValue);
+     float doGetFloat();
+     bool doGet(const bool myValue);
+     bool doGetBool();
      bool isGetable();
      bool isSetable();
+     bool isInt();
+     bool isFloat();
+     bool isBool();
+
+     // TODO: Custom capabilities
+     // TODO: Multiple instances of capability ?
 
      // To support multiple capabilities in an efficient manner
      int setNode(AthomNode* myNode);
@@ -53,10 +72,17 @@ class AthomDevice;
      char _myName[MAX_CHARS_CLASS];
      bool _isSetable;     // true when callback attached
      bool _isGetable;     // true when callback attached
-     int _lastSet;        // value of last set (from Homey)
-     int _lastGet;        // value of last get (from callback)
-     int (*_setCallback) (int);   // set callback function
-     int (*_getCallback) (int);   // get callback function
+     bool _isInt;
+     bool _isFloat;
+     bool _isBool;
+     char _setCallbackType;
+     int (*_setCallbacki)(int);   // set callback function
+     float (*_setCallbackf)(float);   // set callback function
+     bool (*_setCallbackb)(bool);   // set callback function
+     char _getCallbackType;
+     int (*_getCallbacki)();   // get callback function
+     float (*_getCallbackf)();   // get callback function
+     bool (*_getCallbackb)();   // get callback function
      AthomCapability* _prevCapability;
      AthomCapability* _nextCapability;
      AthomNode* _myNode;  // Which node is this attached to
@@ -190,7 +216,7 @@ class AthomDevice;
       int countCapabilities(const int nodeId);
       int findCapabilityByName(const int nodeId, const String myCapability);
 
-      void setCapabilityGetCallback(const int nodeId, const String myCapability, int (*yourFunc)(int) );
+      void setCapabilityGetCallback(const int nodeId, const String myCapability, int (*yourFunc)() );
       void setCapabilitySetCallback(const int nodeId, const String myCapability, int (*yourFunc)(int) );
 
 
@@ -221,6 +247,9 @@ class AthomDevice;
 
       unsigned long _lastReport; // Last report based on millis()
       void _sendReport(const int nodeId, const String myCap, const int value);
+      void _sendReport(const int nodeId, const String myCap, const float value);
+      void _sendReport(const int nodeId, const String myCap, const bool value);
+      void _sendReport(const int nodeId, const String myCap, const String value);
 
 
   };

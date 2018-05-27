@@ -26,9 +26,14 @@ void debugint(const int message) {
   debug(String("INT: " + num));
 }
 
-int TestCallBack(const int inputVal) {
-  debug("Test Callback Called OK - " + String(inputVal));
+int TestCallBack() {
+  debug("Test Callback Called OK - returning 180");
   return 180;
+}
+
+int TestSetCallBack(int myVal) {
+  debug("Test Set Callback Called OK - returning: " + String(myVal));
+  return myVal;
 }
 
 void setup() {
@@ -114,8 +119,10 @@ void setup() {
  debug(myDevice.getCapabilityName(34,56));
  debug("Find capability by node and name. 3. dim");
  debugint(myDevice.findCapabilityByName(3,"dim"));
- debug("Set Callback Method for Node 3, Dim, Get");
+ debug("Set Get Callback Method for Node 3, Dim, Get");
  myDevice.setCapabilityGetCallback(3,"dim",TestCallBack);
+ debug("Set Set Callback Method for Node 3, Dim, Get");
+ myDevice.setCapabilitySetCallback(3,"dim",TestSetCallBack);
 }
 
 
