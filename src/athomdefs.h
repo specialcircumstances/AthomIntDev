@@ -7,6 +7,7 @@
 const bool ATHOMDEFS_DEBUG = true;
 
 const int MAX_NUMBER_NODES = 8;
+// At the moment these three MUST be the same
 const int MAX_CHARS_CLASS = 32;
 const int MAX_CHARS_CAPABILITY = 32;
 const int MAX_CHARS_NAME = 32;

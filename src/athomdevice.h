@@ -27,66 +27,91 @@ class AthomDevice;
 
 // Class definitions
 
- class AthomCapability
+ class AthomBaseObject
  {
+   // Base object supporting list operations
    public:
-     AthomCapability(const String myCap); // Constructor
-     // Get and set capability name
-     int setName(const String myCap);
-     String getName();
+     AthomBaseObject();
+     AthomBaseObject(const String myName);  // Constructor
+     // Get and set name
+     virtual int setName(const String myCap);
+     virtual String getName();
      //
-     int setSetCallback( int (*yourFunc)(int) ); // callback func for set
-     int setSetCallback( float (*yourFunc)(float) ); // callback func for set
-     int setSetCallback( bool (*yourFunc)(bool) ); // callback func for set
-     //
-     int setGetCallback( int (*yourFunc)() ); // callback func for get
-     int setGetCallback( float (*yourFunc)() ); // callback func for get
-     int setGetCallback( bool (*yourFunc)() ); // callback func for get
-     //
-     int doSet(const int myValue);
-     float doSet(const float myValue);
-     bool doSet(const bool myValue);
-     int doGet(const int myValue);
-     int doGetInt();
-     float doGet(const float myValue);
-     float doGetFloat();
-     bool doGet(const bool myValue);
-     bool doGetBool();
-     bool isGetable();
-     bool isSetable();
-     bool isInt();
-     bool isFloat();
-     bool isBool();
+     // List methods
+     virtual int setParent(AthomBaseObject* myParent);
+     virtual AthomBaseObject* getPrev();
+     virtual int setPrev(AthomBaseObject* prevObject);
+     virtual AthomBaseObject* getNext();
+     virtual int setNext(AthomBaseObject* nextObject);
 
-     // TODO: Custom capabilities
-     // TODO: Multiple instances of capability ?
+   protected:
+     char _myName[MAX_CHARS_NAME];
+     AthomBaseObject* _prevObject;
+     AthomBaseObject* _nextObject;
+     AthomBaseObject* _myParent;
 
-     // To support multiple capabilities in an efficient manner
-     int setNode(AthomNode* myNode);
-     AthomCapability* getPrev();
-     int setPrev(AthomCapability* prevCapability);
-     AthomCapability* getNext();
-     int setNext(AthomCapability* nextCapability);
+ };
 
-   private:
-     char _myName[MAX_CHARS_CLASS];
-     bool _isSetable;     // true when callback attached
-     bool _isGetable;     // true when callback attached
-     bool _isInt;
-     bool _isFloat;
-     bool _isBool;
-     char _setCallbackType;
-     int (*_setCallbacki)(int);   // set callback function
-     float (*_setCallbackf)(float);   // set callback function
-     bool (*_setCallbackb)(bool);   // set callback function
-     char _getCallbackType;
-     int (*_getCallbacki)();   // get callback function
-     float (*_getCallbackf)();   // get callback function
-     bool (*_getCallbackb)();   // get callback function
-     AthomCapability* _prevCapability;
-     AthomCapability* _nextCapability;
-     AthomNode* _myNode;  // Which node is this attached to
 
+ class AthomGetSetObject: public AthomBaseObject {
+    // Extends AthomBaseObject to support Get Set and Callbacks
+  public:
+    AthomGetSetObject();
+    AthomGetSetObject(const String myName); // Constructor override
+    int setSetCallback( int (*yourFunc)(int) ); // callback func for set
+    int setSetCallback( float (*yourFunc)(float) ); // callback func for set
+    int setSetCallback( bool (*yourFunc)(bool) ); // callback func for set
+    //
+    int setGetCallback( int (*yourFunc)() ); // callback func for get
+    int setGetCallback( float (*yourFunc)() ); // callback func for get
+    int setGetCallback( bool (*yourFunc)() ); // callback func for get
+    //
+    int doSet(const int myValue);
+    float doSet(const float myValue);
+    bool doSet(const bool myValue);
+    int doGet(const int myValue);
+    int doGetInt();
+    float doGet(const float myValue);
+    float doGetFloat();
+    bool doGet(const bool myValue);
+    bool doGetBool();
+    bool isGetable();
+    bool isSetable();
+    bool isInt();
+    bool isFloat();
+    bool isBool();
+    String getType(); // String representation of type
+
+  protected:
+    bool _isSetable;     // true when callback attached
+    bool _isGetable;     // true when callback attached
+    bool _isInt;
+    bool _isFloat;
+    bool _isBool;
+    char _setCallbackType;
+    int (*_setCallbacki)(int);   // set callback function
+    float (*_setCallbackf)(float);   // set callback function
+    bool (*_setCallbackb)(bool);   // set callback function
+    char _getCallbackType;
+    int (*_getCallbacki)();   // get callback function
+    float (*_getCallbackf)();   // get callback function
+    bool (*_getCallbackb)();   // get callback function
+ };
+
+
+ class AthomCapability : public AthomGetSetObject
+ {
+    public:
+      AthomCapability();
+      AthomCapability(const String myCap); // Constructor override
+ };
+
+
+ class AthomConfigItem : public AthomGetSetObject
+ {
+    public:
+      AthomConfigItem();
+      AthomConfigItem(const String myCap); // Constructor override
  };
 
 
@@ -148,12 +173,10 @@ class AthomDevice;
 
 
 
- class AthomNode
+ class AthomNode : public AthomBaseObject
  {
    public:
      AthomNode(const String myClass); // Constructor
-     int setName(const String myName); // Set Name of Node
-     String getName(); // Retrieve Name of Node
 
      // Class
      int setClass(const String myClass);     // Set Homey Class of Device
@@ -173,24 +196,11 @@ class AthomDevice;
      // triggers
      // TODO:
 
-     // To support multiple nodes in an efficient manner
-     int setDevice(AthomDevice* myDevice);
-     AthomNode* getPrev();
-     int setPrev(AthomNode* prevNode);
-     AthomNode* getNext();
-     int setNext(AthomNode* nextNode);
-
-     //void dot();
-     //void dash();
    private:
-     String _myName;
-     char _myClass[MAX_CHARS_CLASS];
      int _capabilityCount;
      AthomCapability* _firstCapability; // PTR to first capability
      AthomAction* _firstAction;         // PTR to first action
-     AthomNode* _prevNode;              //PTR to previous Node
-     AthomNode* _nextNode;              //PTR to next Node
-     AthomDevice* _myDevice;            // PTR to device
+
  };
 
 
@@ -215,15 +225,28 @@ class AthomDevice;
       String getCapabilityName(const int nodeNumber, const int capNumber);
       int countCapabilities(const int nodeId);
       int findCapabilityByName(const int nodeId, const String myCapability);
+      template <class FuncType>
+      void setCapabilityGetCallback(const int nodeId, const String myCapability, FuncType (*yourFunc)() );
+      template <class FuncType>
+      void setCapabilitySetCallback(const int nodeId, const String myCapability, FuncType (*yourFunc)(FuncType) );
 
-      void setCapabilityGetCallback(const int nodeId, const String myCapability, int (*yourFunc)() );
-      void setCapabilitySetCallback(const int nodeId, const String myCapability, int (*yourFunc)(int) );
-
+      // configuration items
+      int addConfigItem(const String myConfigItem); // Add a Capability to the Node
+      AthomConfigItem* getConfigItem(const int configItemNum);
+      //String getCapabilities(const int nodeId);
+      int countConfigItems();
+      int findConfigItemByName(const String myConfigItem); // Check if capability exists
+      template <class FuncType>
+      void setConfigItemGetCallback(const String myConfigItem, FuncType (*yourFunc)() );
+      template <class FuncType>
+      void setConfigItemSetCallback(const String myConfigItem, FuncType (*yourFunc)(FuncType) );
 
     private:
       char _myName[MAX_CHARS_NAME];
       AthomNode* _firstNode;              // PTR to first node
+      AthomConfigItem* _firstConfigItem;  // PTR to first config item
       int _nodeCount;
+      int _configItemCount;
       int _updateHomeyClass();
       int _updateHomeyCaps();
       int _updateHomeyConfs();

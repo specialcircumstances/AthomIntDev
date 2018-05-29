@@ -100,16 +100,16 @@ The match is case insensitive, but must be otherwise exact. If the variable
 does not exist or does not match properly, the Class will be assumed to be
 "Other".
 Multiple "sub" sensor instances are supported. These must be first declared in
-HomeyClass. These instances are defined in order, using JSON. Instance "0" must
+HomeyClass. These instances are defined in order, using JSON. Instance "1" must
 always exist.
 
 {[
-  "0": "sensor",
-  "1": "thermostat"
+  "1": "sensor",
+  "2": "thermostat"
   ]}
 
 e.g. on the Particle device:      
-      String myHomeyClass0 = "{[\"0\":\"sensor\",\"1\":\"thermostat\"]}";
+      String myHomeyClass = "{[\"0\":\"sensor\",\"1\":\"thermostat\"]}";
 
       void setup() {
         Particle.variable("HomeyClass", myHomeyClass);
@@ -126,8 +126,8 @@ maximum string length for published variables is 622 bytes. You must include
 capabilities for all nodes.
 
 {[
-  "0": [ "measure_power", "meter_power" ]
-  "1": [ "measure_temperature", "target_temperature", "thermostat_mode" ]
+  "1": [ "measure_power", "meter_power" ]
+  "2": [ "measure_temperature", "target_temperature", "thermostat_mode" ]
   ]}
 
 
@@ -151,8 +151,13 @@ Field names are short to reduce resultant string length (name = n, type = t,
 value = v). The value will be taken as the default during pairing, but the
 variable should always be kept "up to date" as it could be read at any time.
 
+BETTER IDEA: Name and type, and GET/SET to Node 0 for additional info
+GET to node 0 returns additional info, in a series of reports?, description, min, max, current value
+Set is just a set.
+Variant of capability.
+
+
 JSON Format:
-    {
       [
         {
           "n": "setting01",
@@ -165,7 +170,6 @@ JSON Format:
           "v": 123
         },
       ]
-    }
 
     e.g. on the Particle device:      
           char myHomeyConfs[622];

@@ -119,10 +119,39 @@ void setup() {
  debug(myDevice.getCapabilityName(34,56));
  debug("Find capability by node and name. 3. dim");
  debugint(myDevice.findCapabilityByName(3,"dim"));
- debug("Set Get Callback Method for Node 3, Dim, Get");
+ debug("Set Callback Method for Node 3, Dim, Get");
  myDevice.setCapabilityGetCallback(3,"dim",TestCallBack);
- debug("Set Set Callback Method for Node 3, Dim, Get");
+ debug("Set Callback Method for Node 3, Dim, Set");
  myDevice.setCapabilitySetCallback(3,"dim",TestSetCallBack);
+ debug("-----------------------------------------");
+ debug("Test add Config Item: polling_int");
+ debugint(myDevice.addConfigItem("polling_int"));
+ debug("How many config items do we have?");
+ debugint(myDevice.countConfigItems());
+ debug("Test add DUPLICATE Config Item: polling_int");
+ debugint(myDevice.addConfigItem("polling_int"));
+ debug("How many config items do we have?");
+ debugint(myDevice.countConfigItems());
+ debug("Get ConfigItem by Number (1)");
+ debug(myDevice.getConfigItem(1)->getName());
+ debug("Get ConfigItem by Name polling_int should be 1");
+ debugint(myDevice.findConfigItemByName("polling_int"));
+ debug("MULTIPLES");
+ debug("Test add Config Item: adjust01 and adjust02");
+ debugint(myDevice.addConfigItem("adjust01"));
+ debugint(myDevice.addConfigItem("adjust02"));
+ debug("How many config items do we have?");
+ debugint(myDevice.countConfigItems());
+ debug("Test add DUPLICATE Config Item: adjust01");
+ debugint(myDevice.addConfigItem("adjust01"));
+ debug("Test add DUPLICATE Config Item: adjust02");
+ debugint(myDevice.addConfigItem("adjust02"));
+ debug("How many config items do we have?");
+ debugint(myDevice.countConfigItems());
+ debug("Get ConfigItem by Number (3)");
+ debug(myDevice.getConfigItem(3)->getName());
+ debug("Get ConfigItem by Name adjust02 should be 3");
+ debugint(myDevice.findConfigItemByName("adjust02"));
 }
 
 

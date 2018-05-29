@@ -62,12 +62,94 @@
      return false;
    }
 
+   static bool athomConfigIsValid(String myConf) {
+     if (myConf.length() < MAX_CHARS_NAME ) {
+       return true;
+     } else {
+       return false;
+     }
+   }
 
  // Class Definitions
 
  // ******************************************************
 
- AthomCapability::AthomCapability(const String myCap) {  // Class Constructor
+ AthomBaseObject::AthomBaseObject() {
+   _prevObject = nullptr;
+   _nextObject = nullptr;
+   _myParent = nullptr;
+   setName("UNDEFINED");
+ }
+
+
+ AthomBaseObject::AthomBaseObject(const String myCap) {
+   _prevObject = nullptr;
+   _nextObject = nullptr;
+   _myParent = nullptr;
+   setName(myCap);
+ }
+
+
+ int AthomBaseObject::setName(const String myName) {
+   myName.toCharArray(_myName,MAX_CHARS_NAME);
+   return 0;
+ }
+
+ String AthomBaseObject::getName() {
+   // convert to String and return
+   String rStr = _myName;
+   return rStr;
+ }
+
+
+ AthomBaseObject* AthomBaseObject::getPrev() {
+   return _prevObject;
+ }
+
+
+ AthomBaseObject* AthomBaseObject::getNext() {
+   return _nextObject;
+ }
+
+
+ int AthomBaseObject::setNext(AthomBaseObject* nextObject) {
+   // TODO checking type
+   _nextObject = nextObject;
+   return 0;
+ }
+
+ int AthomBaseObject::setPrev(AthomBaseObject* prevObject) {
+   // TODO checking type
+   _prevObject = prevObject;
+   return 0;
+ }
+
+ int AthomBaseObject::setParent(AthomBaseObject* myParent) {
+   _myParent = myParent;
+   return 0;
+ }
+
+ // ******************************************************
+ AthomGetSetObject::AthomGetSetObject()
+  : AthomBaseObject()
+   {
+     _isSetable = false;
+     _isGetable = false;
+     _isInt = false;
+     _isFloat = false;
+     _isBool = false;
+     _setCallbacki = nullptr;
+     _setCallbackf = nullptr;
+     _setCallbackb = nullptr;
+     _getCallbacki = nullptr;
+     _getCallbackf = nullptr;
+     _getCallbackb = nullptr;
+     //: AthomBaseObject(myName);
+   }
+
+ AthomGetSetObject::AthomGetSetObject(const String myName)
+  : AthomBaseObject(myName)
+ {
    _isSetable = false;
    _isGetable = false;
    _isInt = false;
@@ -79,57 +161,10 @@
    _getCallbacki = nullptr;
    _getCallbackf = nullptr;
    _getCallbackb = nullptr;
-   _prevCapability = nullptr;
-   _nextCapability = nullptr;
-   _myNode = nullptr;
-   setName(myCap);
+   //: AthomBaseObject(myName);
  }
 
- int AthomCapability::setName(const String myCap) {
-   // Sometimes this might be validated
-   // Sometimes not...
-   if (athomIsCapability(myCap)) {
-     // Store to private variable
-     myCap.toCharArray(_myName,MAX_CHARS_CAPABILITY);
-     return 0;
-   }
-   return -1;
- }
-
- String AthomCapability::getName() {
-   // convert to String and return
-   String rStr = _myName;
-   return rStr;
- }
-
-
- AthomCapability* AthomCapability::getNext() {
-   return _nextCapability;
- }
-
- AthomCapability* AthomCapability::getPrev() {
-   return _prevCapability;
- }
-
- int AthomCapability::setNext(AthomCapability* nextCap) {
-   // TODO checking type
-   _nextCapability = nextCap;
-   return 0;
- }
-
- int AthomCapability::setPrev(AthomCapability* prevCap) {
-   // TODO checking type
-   _prevCapability = prevCap;
-   return 0;
- }
-
- int AthomCapability::setNode(AthomNode* myNode) {
-   // TODO checking type
-   _myNode = myNode;
-   return 0;
- }
-
- int AthomCapability::setSetCallback( int (*yourFunc)(int) ) {
+ int AthomGetSetObject::setSetCallback( int (*yourFunc)(int) ) {
    if (_isGetable && (_isFloat || _isBool)) {
      // Get and set type must match
      return -1;
@@ -144,7 +179,7 @@
    return 0;
  }
 
- int AthomCapability::setSetCallback( float (*yourFunc)(float) ) {
+ int AthomGetSetObject::setSetCallback( float (*yourFunc)(float) ) {
    if (_isGetable && (_isInt || _isBool)) {
      // Get and set type must match
      return -1;
@@ -159,7 +194,7 @@
    return 0;
  }
 
- int AthomCapability::setSetCallback( bool (*yourFunc)(bool) ) {
+ int AthomGetSetObject::setSetCallback( bool (*yourFunc)(bool) ) {
    if (_isGetable && (_isFloat || _isInt)) {
      // Get and set type must match
      return -1;
@@ -174,7 +209,7 @@
    return 0;
  }
 
- int AthomCapability::doSet(const int myValue) {
+ int AthomGetSetObject::doSet(const int myValue) {
    if (_isInt) {
      return _setCallbacki(myValue);
    } else {
@@ -182,7 +217,7 @@
    }
  }
 
- float AthomCapability::doSet(const float myValue) {
+ float AthomGetSetObject::doSet(const float myValue) {
    if (_isFloat) {
      return _setCallbackf(myValue);
    } else {
@@ -190,7 +225,7 @@
    }
  }
 
- bool AthomCapability::doSet(const bool myValue) {
+ bool AthomGetSetObject::doSet(const bool myValue) {
    if (_isBool) {
      return _setCallbackb(myValue);
    } else {
@@ -198,11 +233,11 @@
    }
  }
 
- bool AthomCapability::isSetable() {
+ bool AthomGetSetObject::isSetable() {
    return _isSetable;
  }
 
- int AthomCapability::setGetCallback( int (*yourFunc)() ) {
+ int AthomGetSetObject::setGetCallback( int (*yourFunc)() ) {
    if (_isSetable && (_isFloat || _isBool)) {
      // Get and set type must match
      return -1;
@@ -217,7 +252,7 @@
    return 0;
  }
 
- int AthomCapability::setGetCallback( float (*yourFunc)() ) {
+ int AthomGetSetObject::setGetCallback( float (*yourFunc)() ) {
    if (_isSetable && (_isInt || _isBool)) {
      // Get and set type must match
      return -1;
@@ -232,7 +267,7 @@
    return 0;
  }
 
- int AthomCapability::setGetCallback( bool (*yourFunc)() ) {
+ int AthomGetSetObject::setGetCallback( bool (*yourFunc)() ) {
    if (_isSetable && (_isInt || _isFloat)) {
      // Get and set type must match
      return -1;
@@ -247,26 +282,26 @@
    return 0;
  }
 
- int AthomCapability::doGet(const int myValue) {
+ int AthomGetSetObject::doGet(const int myValue) {
    // Value is ignored for Get, just overloading
    return doGetInt();
  }
 
-  int AthomCapability::doGetInt() {
+ int AthomGetSetObject::doGetInt() {
     // Value is ignored for Get
     if (_isGetable && _isInt) {
       return _getCallbacki();
     } else {
       return -1;
     }
-  }
+ }
 
-  float AthomCapability::doGet(const float myValue) {
+ float AthomGetSetObject::doGet(const float myValue) {
     // Value is ignored for Get, just overloading
     return doGetFloat();
-  }
+ }
 
- float AthomCapability::doGetFloat() {
+ float AthomGetSetObject::doGetFloat() {
    if (_isGetable && _isFloat) {
      return _getCallbackf();
    } else {
@@ -274,12 +309,12 @@
    }
  }
 
- bool AthomCapability::doGet(const bool myValue) {
+ bool AthomGetSetObject::doGet(const bool myValue) {
    // Value is ignored for Get, just overloading
    return doGetBool();
  }
 
- bool AthomCapability::doGetBool() {
+ bool AthomGetSetObject::doGetBool() {
    if (_isGetable && _isBool) {
      return _getCallbackb();
    } else {
@@ -287,20 +322,71 @@
    }
  }
 
- bool AthomCapability::isGetable() {
+ bool AthomGetSetObject::isGetable() {
    return _isGetable;
  }
 
- bool AthomCapability::isInt() {
+ bool AthomGetSetObject::isInt() {
    return _isInt;
  }
 
- bool AthomCapability::isFloat() {
+ bool AthomGetSetObject::isFloat() {
    return _isFloat;
  }
 
- bool AthomCapability::isBool() {
+ bool AthomGetSetObject::isBool() {
    return _isBool;
+ }
+
+ String AthomGetSetObject::getType() {
+   if (_isBool) {return "bool";}
+   if (_isInt) {return "int";}
+   if (_isFloat) {return "float";}
+   return "null";
+ }
+
+ // ******************************************************
+
+ AthomCapability::AthomCapability()
+ {  // Class Constructor
+  // Check capability is valid
+  // Can't throw exceptions so mark bad object
+  String validatedCap = "UNKNOWN";
+  setName(validatedCap);
+ }
+
+ AthomCapability::AthomCapability(const String myCap)
+  : AthomGetSetObject(myCap)
+  {  // Class Constructor
+   // Check capability is valid
+   // Can't throw exceptions so mark bad object
+   String validatedCap = myCap;
+   if (!athomIsCapability(validatedCap)) {
+     validatedCap = "UNKNOWN";
+   }
+   setName(validatedCap);
+ }
+
+ // ******************************************************
+
+ AthomConfigItem::AthomConfigItem()
+ {  // Class Constructor
+  // Check capability is valid
+  // Can't throw exceptions so mark bad object
+  String validatedCap = "UNKNOWN";
+  setName(validatedCap);
+ }
+
+ AthomConfigItem::AthomConfigItem(const String myName)
+  : AthomGetSetObject(myName)
+  {  // Class Constructor
+   // Check capability is valid
+   // Can't throw exceptions so mark bad object
+   String validatedName = myName;
+   if (!athomConfigIsValid(validatedName)) {
+     validatedName = "UNKNOWN";
+   }
+   setName(validatedName);
  }
 
 
@@ -344,17 +430,17 @@
 
 // ***************************************************
 
- AthomNode::AthomNode(const String myClass){              // Class Constructor
-  // Init private vars
-   _myName = "Undefined";
-   //_myClass =
+ AthomNode::AthomNode(const String myClass)
+  : AthomBaseObject("UNDEFINED")
+ {              // Class Constructor
    _firstCapability = nullptr;
    _capabilityCount = 0;
    _firstAction = nullptr;
-   _prevNode = nullptr;
-   _nextNode = nullptr;
-   _myDevice = nullptr;
-   setClass(myClass);
+   String validatedClass = myClass;
+   if (!athomIsClass(validatedClass)) {
+     validatedClass = "UNKNOWN";
+   }
+   setName(validatedClass);
  }
 
  int AthomNode::setClass(const String nodeClass) {
@@ -362,42 +448,15 @@
    // Sometimes not...
    if (athomIsClass(nodeClass)) {
      // Store to private variable
-     nodeClass.toCharArray(_myClass,MAX_CHARS_CLASS);
+     setName(nodeClass);
      return 0;
    }
    return -1;
  }
 
  String AthomNode::getClass() {
-   // convert to String and return
-   String rStr = _myClass;
-   return rStr;
- }
-
- AthomNode* AthomNode::getNext() {
-   return _nextNode;
- }
-
- AthomNode* AthomNode::getPrev() {
-   return _prevNode;
- }
-
- int AthomNode::setNext(AthomNode* nextNode) {
-   // TODO checking type
-   _nextNode = nextNode;
-   return 0;
- }
-
- int AthomNode::setPrev(AthomNode* prevNode) {
-   // TODO checking type
-   _prevNode = prevNode;
-   return 0;
- }
-
- int AthomNode::setDevice(AthomDevice* myDevice) {
-   // TODO checking type
-   _myDevice = myDevice;
-   return 0;
+   // potatoe potatoe
+   return getName();
  }
 
  int AthomNode::addCapability(const String myCap){
@@ -412,8 +471,8 @@
      _firstCapability=newCap;
      capabilityCount=1;
    } else {
-     AthomCapability* next = _firstCapability;
-     AthomCapability* last = _firstCapability;
+     AthomBaseObject* next = _firstCapability;
+     AthomBaseObject* last = _firstCapability;
      while (next!=nullptr) {
        last = next;
        next = last->getNext();
@@ -424,7 +483,7 @@
      capabilityCount++;
    }
    // Tell the capability who it's parent is
-   newCap->setNode(this);
+   newCap->setParent(this);
    // Store count of nodes.
    _capabilityCount = capabilityCount;
    // Update Cloud variable
@@ -445,13 +504,13 @@
        return _firstCapability;
      } else {
        int myCount = 1;
-       AthomCapability* next = _firstCapability;
-       AthomCapability* last = _firstCapability;
+       AthomBaseObject* next = _firstCapability;
        while (next!=nullptr) {
-         if (myCount==capNumber) {return next;}
+         if (myCount==capNumber) {
+           return static_cast<AthomCapability*>(next);
+         }
          myCount++;
-         last = next;
-         next = last->getNext();
+         next = next->getNext();
       }
     }
    }
@@ -473,16 +532,14 @@
        return 0;
      } else {
        // Step through capabilities
-       AthomCapability* next = _firstCapability;
-       AthomCapability* last = _firstCapability;
+       AthomBaseObject* next = _firstCapability;
        while (next!=nullptr) {
          capabilityCount++;
          //debug(next->getName());
-         if (next->getName().compareTo(myCap)==0) {
+         if (static_cast<AthomCapability*>(next)->getName().compareTo(myCap)==0) {
            return capabilityCount;
          }
-         last = next;
-         next = last->getNext();
+         next = next->getNext();
        }
        return 0; // Not found
      }
@@ -580,8 +637,8 @@ int AthomDevice::addNode(const String nodeClass) {
       _firstNode=newNode;
       nodeCount=1;
     } else {
-      AthomNode* next = _firstNode;
-      AthomNode* last = _firstNode;
+      AthomBaseObject* next = _firstNode;
+      AthomBaseObject* last = _firstNode;
       while (next!=nullptr) {
         last = next;
         next = last->getNext();
@@ -592,7 +649,7 @@ int AthomDevice::addNode(const String nodeClass) {
       nodeCount++;
     }
     // Tell the node who it's parent is
-    newNode->setDevice(this);
+    //newNode->setParent(this);
     // Store count of nodes.
     _nodeCount = nodeCount;
     // Update Cloud variable
@@ -620,13 +677,11 @@ AthomNode* AthomDevice::getNode(const int nodeNumber) {
         return _firstNode;
       } else {
         int myCount = 1;
-        AthomNode* next = _firstNode;
-        AthomNode* last = _firstNode;
+        AthomBaseObject* next = _firstNode;
         while (next!=nullptr) {
-          if (myCount==nodeNumber) {return next;}
+          if (myCount==nodeNumber) {return static_cast<AthomNode*>(next);}
           myCount++;
-          last = next;
-          next = last->getNext();
+          next = next->getNext();
        }
      }
     }
@@ -657,6 +712,7 @@ int AthomDevice::addCapability(const int nodeId, const String myCapability) {
     return -1;
   }
 }
+
 
 AthomCapability* AthomDevice::getCapability(const int nodeNumber, const int capNumber) {
   AthomNode* myNode = getNode(nodeNumber);
@@ -707,24 +763,142 @@ int AthomDevice::findCapabilityByName(const int nodeNumber, const String myCap) 
   }
 }
 
-void AthomDevice::setCapabilityGetCallback(const int nodeId, const String myCapability, int (*yourFunc)() ) {
+template <class FuncType>
+void AthomDevice::setCapabilityGetCallback(const int nodeId, const String myCapability, FuncType (*yourFunc)() ) {
   // TODO Add return values
   int myCapId = findCapabilityByName(nodeId, myCapability);
   if (myCapId > 0) {
-    AthomCapability* myCap = getCapability(nodeId, myCapId);
-    myCap->setGetCallback(yourFunc);
+    getCapability(nodeId, myCapId)->setGetCallback(yourFunc);
   }
 }
+template void AthomDevice::setCapabilityGetCallback<int>(const int nodeId, const String myCapability, int (*yourFunc)() );
+template void AthomDevice::setCapabilityGetCallback<float>(const int nodeId, const String myCapability, float (*yourFunc)() );
+template void AthomDevice::setCapabilityGetCallback<bool>(const int nodeId, const String myCapability, bool (*yourFunc)() );
 
-void AthomDevice::setCapabilitySetCallback(const int nodeId, const String myCapability, int (*yourFunc)(int) ) {
+
+template <class FuncType>
+void AthomDevice::setCapabilitySetCallback(const int nodeId, const String myCapability, FuncType (*yourFunc)(FuncType) ) {
   // TODO Add return values
   int myCapId = findCapabilityByName(nodeId, myCapability);
   if (myCapId > 0) {
-    AthomCapability* myCap = getCapability(nodeId, myCapId);
-    myCap->setSetCallback(yourFunc);
+    getCapability(nodeId, myCapId)->setSetCallback(yourFunc);
+  }
+}
+template void AthomDevice::setCapabilitySetCallback<int>(const int nodeId, const String myCapability, int (*yourFunc)(int) );
+template void AthomDevice::setCapabilitySetCallback<float>(const int nodeId, const String myCapability, float (*yourFunc)(float) );
+template void AthomDevice::setCapabilitySetCallback<bool>(const int nodeId, const String myCapability, bool (*yourFunc)(bool) );
+
+
+AthomConfigItem* AthomDevice::getConfigItem(const int configItemNum) {
+    // Returns a pointer to the requested node
+    // Check bounds
+    if ((0 < configItemNum) && (configItemNum <= _configItemCount)) {
+      // Should note at this time we don't support
+      // dynamic changes to node list. No delete.
+      // MESH might change that. TODO
+      if (configItemNum==1) {
+        return _firstConfigItem;
+      } else {
+        int myCount = 1;
+        AthomBaseObject* next = _firstConfigItem;
+        while (next!=nullptr) {
+          if (myCount==configItemNum) {
+            return static_cast<AthomConfigItem*>(next);
+          }
+          myCount++;
+          next = next->getNext();
+       }
+     }
+    }
+    return nullptr;
+}
+
+
+// Check if a Config Item exists, return 0 for no, -1 for invalid, or capaility ID
+int AthomDevice::findConfigItemByName(const String myConf) {
+  int configItemCount = 0;
+  if (athomConfigIsValid(myConf)) {
+    if (_firstConfigItem == nullptr) {
+      // No capabilities
+      return 0; // Config Item Not Found
+    } else {
+      // Step through capabilities
+      AthomBaseObject* next = _firstConfigItem;
+      while (next!=nullptr) {
+        configItemCount++;
+        if (static_cast<AthomConfigItem*>(next)->getName().compareTo(myConf)==0) {
+          return configItemCount;
+        }
+        next = next->getNext();
+      }
+      return 0; // Config Item Not Found
+    }
+  } else {
+    return -1; // Config Item is invalid
   }
 }
 
+
+int AthomDevice::addConfigItem(const String myName){
+  int configItemCount = 0;
+  if (findConfigItemByName(myName)!=0) {
+    return -1; // duplicate or name not valid
+  }
+  AthomConfigItem* newConf = new AthomConfigItem(myName);
+  // TODO: check for malloc fail??
+  if (_firstConfigItem==nullptr) {
+    _firstConfigItem=newConf;
+    configItemCount=1;
+  } else {
+    AthomBaseObject* next = _firstConfigItem;
+    AthomBaseObject* last = _firstConfigItem;
+    while (next!=nullptr) {
+      last = next;
+      next = last->getNext();
+      configItemCount++;
+    }
+    newConf->setPrev(last);
+    last->setNext(newConf);
+    configItemCount++;
+  }
+  // Tell the capability who it's parent is
+  //newConf->setParent(this);
+  // Store count of nodes.
+  _configItemCount = configItemCount;
+  // Update Cloud variable
+  _updateHomeyConfs();
+  return configItemCount;
+}
+
+template <class FuncType>
+void AthomDevice::setConfigItemGetCallback(const String myConfigItem, FuncType (*yourFunc)() ) {
+  // TODO Add return values
+  int myConfId = findConfigItemByName(myConfigItem);
+  if (myConfId > 0) {
+    getConfigItem(myConfId)->setGetCallback(yourFunc);
+  }
+}
+template void AthomDevice::setConfigItemGetCallback<int>(const String myConfigItem, int (*yourFunc)() );
+template void AthomDevice::setConfigItemGetCallback<float>(const String myConfigItem, float (*yourFunc)() );
+template void AthomDevice::setConfigItemGetCallback<bool>(const String myConfigItem, bool (*yourFunc)() );
+
+
+template <class FuncType>
+void AthomDevice::setConfigItemSetCallback(const String myConfigItem, FuncType (*yourFunc)(FuncType) ) {
+  // TODO Add return values
+  int myConfId = findConfigItemByName(myConfigItem);
+  if (myConfId > 0) {
+    getConfigItem(myConfId)->setSetCallback(yourFunc);
+  }
+}
+template void AthomDevice::setConfigItemSetCallback<int>(const String myConfigItem, int (*yourFunc)(int) );
+template void AthomDevice::setConfigItemSetCallback<float>(const String myConfigItem, float (*yourFunc)(float) );
+template void AthomDevice::setConfigItemSetCallback<bool>(const String myConfigItem, bool (*yourFunc)(bool) );
+
+
+int AthomDevice::countConfigItems() {
+    return _configItemCount;
+}
 
 
 int AthomDevice::_updateHomeyClass() {
@@ -769,6 +943,24 @@ int AthomDevice::_updateHomeyCaps() {
   //_myHomeyCaps= jsonwriter.getBuffer();
   _myHomeyCaps = "";
   root.printTo(_myHomeyCaps);
+}
+
+
+int AthomDevice::_updateHomeyConfs() {
+  // This to update Cloud Vars
+  // Need to create a String containing JSON
+  // Write array to cloud variable as JSON
+  DynamicJsonBuffer jsonbuffer(622);
+  JsonObject& root = jsonbuffer.createObject();
+  for (int i = 1; i <= _configItemCount; i++) {
+    JsonObject& conf = root.createNestedObject(String(i));
+    AthomConfigItem* myConfigItem = getConfigItem(i);
+    conf["n"] = myConfigItem->getName();
+    conf["t"] = myConfigItem->getType();
+  }
+  // assign to myHomeyConfs
+  _myHomeyConfs = "";
+  root.printTo(_myHomeyConfs);
 }
 
 
