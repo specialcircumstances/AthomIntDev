@@ -225,7 +225,7 @@ class AthomDevice;
       String getCapabilityName(const int nodeNumber, const int capNumber);
       int countCapabilities(const int nodeId);
       int findCapabilityByName(const int nodeId, const String myCapability);
-      template <class FuncType>
+      template <class FuncType> // we allow int, float and bool
       void setCapabilityGetCallback(const int nodeId, const String myCapability, FuncType (*yourFunc)() );
       template <class FuncType>
       void setCapabilitySetCallback(const int nodeId, const String myCapability, FuncType (*yourFunc)(FuncType) );

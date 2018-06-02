@@ -9,7 +9,7 @@
 //#include "athomdefs.h"
 #include "athomdevice.h"
 
-// We'll need one of these.
+SerialLogHandler logHandler;
 
 // Create an Athom Device
 AthomDevice myDevice;
@@ -26,13 +26,36 @@ void debugint(const int message) {
   debug(String("INT: " + num));
 }
 
-int TestCallBack() {
-  debug("Test Callback Called OK - returning 180");
+int TestCallBackInt() {
+  debug("Test Callback Int Called OK - returning 180");
   return 180;
 }
 
-int TestSetCallBack(int myVal) {
-  debug("Test Set Callback Called OK - returning: " + String(myVal));
+float TestCallBackFloat() {
+  debug("Test Callback Float Called OK - returning 1.8");
+  return 1.8;
+}
+
+ bool TestCallBackBool() {
+  debug("Test Callback Bool Called OK - returning true");
+  return true;
+}
+
+int TestSetCallBackInt(int myVal) {
+  debug("Int Test Set Callback Called OK - returning: " + String(myVal));
+  delay(1000);
+  return myVal;
+}
+
+float TestSetCallBackFloat(float myVal) {
+  debug("Float Test Set Callback Called OK - returning: " + String(myVal));
+  delay(1000);
+  return myVal;
+}
+
+bool TestSetCallBackBool(bool myVal) {
+  debug("Bool Test Set Callback Called OK - returning same bool" + String(myVal));
+  delay(1000);
   return myVal;
 }
 
@@ -87,6 +110,7 @@ void setup() {
  }
  debug("via Device - should be not found");
  debug(myDevice.getClass(4));
+
  debug("---------------------------------------------");
  debug("CAPABILITIES");
  debug("Adding capability, bad node, good class");
@@ -119,10 +143,22 @@ void setup() {
  debug(myDevice.getCapabilityName(34,56));
  debug("Find capability by node and name. 3. dim");
  debugint(myDevice.findCapabilityByName(3,"dim"));
+ debug("Int Callbacks");
+ debug("Set Callback Method for Node 2, thermostat_mode, Get");
+ myDevice.setCapabilityGetCallback(2,"thermostat_mode",&TestCallBackInt);
+ debug("Set Callback Method for Node 2, thermostat_mode, Set");
+ myDevice.setCapabilitySetCallback(2,"thermostat_mode",&TestSetCallBackInt);
+ debug("Float Callbacks");
  debug("Set Callback Method for Node 3, Dim, Get");
- myDevice.setCapabilityGetCallback(3,"dim",TestCallBack);
+ myDevice.setCapabilityGetCallback(3,"dim",&TestCallBackFloat);
  debug("Set Callback Method for Node 3, Dim, Set");
- myDevice.setCapabilitySetCallback(3,"dim",TestSetCallBack);
+ myDevice.setCapabilitySetCallback(3,"dim",&TestSetCallBackFloat);
+ debug("Bool callbacks");
+ debug("Set Callback Method for Node 3, onoff, Get");
+ myDevice.setCapabilityGetCallback(3,"onoff",&TestCallBackBool);
+ debug("Set Callback Method for Node 3, onoff, Set");
+ myDevice.setCapabilitySetCallback(3,"onoff",&TestSetCallBackBool);
+
  debug("-----------------------------------------");
  debug("Test add Config Item: polling_int");
  debugint(myDevice.addConfigItem("polling_int"));

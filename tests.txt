@@ -1,3 +1,8 @@
 {"n":"3","c":"dim"}
+{"n":"3","c":"onoff"}
+{"n":"2","c":"thermostat_mode"}
 
-{"n":"3","c":"dim","v":223}
+{"n":"3","c":"dim","v":22.3}
+{"n":"3","c":"onoff","v":"true"}
+{"n":"3","c":"onoff","v":"false"}
+{"n":"2","c":"thermostat_mode","v":2}

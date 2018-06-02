@@ -195,7 +195,7 @@
  }
 
  int AthomGetSetObject::setSetCallback( bool (*yourFunc)(bool) ) {
-   if (_isGetable && (_isFloat || _isInt)) {
+   if (yourFunc==nullptr || (_isGetable && (_isFloat || _isInt))) {
      // Get and set type must match
      return -1;
    }
@@ -210,7 +210,7 @@
  }
 
  int AthomGetSetObject::doSet(const int myValue) {
-   if (_isInt) {
+   if (_isInt && _isSetable) {
      return _setCallbacki(myValue);
    } else {
      return -1;
@@ -218,7 +218,7 @@
  }
 
  float AthomGetSetObject::doSet(const float myValue) {
-   if (_isFloat) {
+   if (_isFloat && _isSetable) {
      return _setCallbackf(myValue);
    } else {
      return -1;
@@ -226,8 +226,15 @@
  }
 
  bool AthomGetSetObject::doSet(const bool myValue) {
-   if (_isBool) {
-     return _setCallbackb(myValue);
+   debug("doSet bool Called: " + String(myValue));
+   delay(1000);
+   if (_isBool && _isSetable && _getCallbackb!=nullptr) {
+     debug("doSet bool calling callback");
+     delay(1000);
+     bool result = _setCallbackb(myValue);
+     debug("Got result on bool set callback");
+     delay(1000);
+     return result;
    } else {
      return false;
    }
@@ -253,7 +260,7 @@
  }
 
  int AthomGetSetObject::setGetCallback( float (*yourFunc)() ) {
-   if (_isSetable && (_isInt || _isBool)) {
+   if (_isSetable && (_isInt || _isBool) ) {
      // Get and set type must match
      return -1;
    }
@@ -268,7 +275,7 @@
  }
 
  int AthomGetSetObject::setGetCallback( bool (*yourFunc)() ) {
-   if (_isSetable && (_isInt || _isFloat)) {
+   if ( yourFunc==nullptr || (_isSetable && (_isInt || _isFloat))) {
      // Get and set type must match
      return -1;
    }
@@ -315,8 +322,11 @@
  }
 
  bool AthomGetSetObject::doGetBool() {
-   if (_isGetable && _isBool) {
-     return _getCallbackb();
+   if (_isGetable && _isBool && _getCallbackb!=nullptr) {
+     bool result = _getCallbackb();
+     debug("Got bool get result, wil return");
+     delay(1000);
+     return result;
    } else {
      return NULL;
    }
@@ -1032,6 +1042,8 @@ int AthomDevice::_myHomeyGet(const String message) {
     return 2;
   } else if (myCap->isBool()) {
     bool result = myCap->doGetBool();
+    debug("Got bool result in _get, will send report:" + String(result));
+    delay(1000);
     _sendReport(nodeId, myCapability, result);
     return 3;
   }
@@ -1092,11 +1104,15 @@ int AthomDevice::_myHomeySet(const String message) {
     _sendReport(nodeId, myCapability, result);
     return 2;
   } else if (myCap->isBool()) {
+    debug("Attempting to set Boolean.");
+    delay(1000);
     bool myBool = false;
     if (myValueStr == "true") {
       myBool = true;
     }
     bool result = myCap->doSet(myBool);
+    debug("Boolean set complete.");
+    delay(1000);
     _sendReport(nodeId, myCapability, result);
     return 3;
   }
