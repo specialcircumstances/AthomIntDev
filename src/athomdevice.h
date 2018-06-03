@@ -109,7 +109,31 @@ class AthomDevice;
  {
     public:
       AthomConfigItem();
-      AthomConfigItem(const String myCap); // Constructor override
+      AthomConfigItem(const String myLabel); // Constructor override
+      // Gets
+      int getMinInt();
+      float getMinFloat();
+      bool getMinBool();  // it's nonsense
+      int getMaxInt();
+      float getMaxFloat();
+      bool getMaxBool();  // this too
+      String getDesc();
+      // Sets
+      void setMin(const int minValue);
+      void setMin(const float minValue);
+      void setMin(const bool minValue); // Nonsense of course
+      void setMax(const int maxValue);
+      void setMax(const float maxValue);
+      void setMax(const bool maxValue); // more nonsense
+      void setDesc(const String myDesc);
+
+    private:
+      int _minInt;
+      float _minFloat;
+      int _maxInt;
+      float _maxFloat;
+      String _desc; // Label is assumed to be name
+
  };
 
 
@@ -266,12 +290,18 @@ class AthomDevice;
       int _myHomeyAct(String message);
       int _myHomeyRecv(String message); // A query channel ?????
 
+      int _configItemGet(const String item, const String param);
+
       unsigned long _lastReport; // Last report based on millis()
       void _sendReport(const int nodeId, const String myCap, const int value);
       void _sendReport(const int nodeId, const String myCap, const float value);
       void _sendReport(const int nodeId, const String myCap, const bool value);
       void _sendReport(const int nodeId, const String myCap, const String value);
-
+      // and again for Config reports
+      void _sendReport(const int nodeId, const String myConf, const String myParam, const int value);
+      void _sendReport(const int nodeId, const String myConf, const String myParam, const float value);
+      void _sendReport(const int nodeId, const String myConf, const String myParam, const bool value);
+      void _sendReport(const int nodeId, const String myConf, const String myParam, const String value);
 
   };
 

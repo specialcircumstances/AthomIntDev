@@ -118,16 +118,19 @@
    return 0;
  }
 
+
  int AthomBaseObject::setPrev(AthomBaseObject* prevObject) {
    // TODO checking type
    _prevObject = prevObject;
    return 0;
  }
 
+
  int AthomBaseObject::setParent(AthomBaseObject* myParent) {
    _myParent = myParent;
    return 0;
  }
+
 
  // ******************************************************
  AthomGetSetObject::AthomGetSetObject()
@@ -147,6 +150,7 @@
      //: AthomBaseObject(myName);
    }
 
+
  AthomGetSetObject::AthomGetSetObject(const String myName)
   : AthomBaseObject(myName)
  {
@@ -164,8 +168,9 @@
    //: AthomBaseObject(myName);
  }
 
+
  int AthomGetSetObject::setSetCallback( int (*yourFunc)(int) ) {
-   if (_isGetable && (_isFloat || _isBool)) {
+   if (yourFunc==nullptr || (_isGetable && (_isFloat || _isBool))) {
      // Get and set type must match
      return -1;
    }
@@ -179,8 +184,9 @@
    return 0;
  }
 
+
  int AthomGetSetObject::setSetCallback( float (*yourFunc)(float) ) {
-   if (_isGetable && (_isInt || _isBool)) {
+   if (yourFunc==nullptr || (_isGetable && (_isInt || _isBool))) {
      // Get and set type must match
      return -1;
    }
@@ -194,6 +200,7 @@
    return 0;
  }
 
+
  int AthomGetSetObject::setSetCallback( bool (*yourFunc)(bool) ) {
    if (yourFunc==nullptr || (_isGetable && (_isFloat || _isInt))) {
      // Get and set type must match
@@ -201,7 +208,7 @@
    }
    _setCallbackb = yourFunc;
    _setCallbackf = nullptr;
-   _setCallbackb = nullptr;
+   _setCallbacki = nullptr;
    _isInt = false;
    _isFloat = false;
    _isBool = true;
@@ -209,46 +216,41 @@
    return 0;
  }
 
+
  int AthomGetSetObject::doSet(const int myValue) {
-   if (_isInt && _isSetable) {
+   if (_isInt && _isSetable && _setCallbacki!=nullptr) {
      return _setCallbacki(myValue);
    } else {
      return -1;
    }
  }
 
+
  float AthomGetSetObject::doSet(const float myValue) {
-   if (_isFloat && _isSetable) {
+   if (_isFloat && _isSetable && _setCallbackf!=nullptr) {
      return _setCallbackf(myValue);
    } else {
      return -1;
    }
  }
 
+
  bool AthomGetSetObject::doSet(const bool myValue) {
-   debug("doSet bool Called: " + String(myValue));
-   delay(1000);
-   if (_isBool && _isSetable && _getCallbackb!=nullptr) {
-     debug("create result bool");
-     delay(1000);
-     bool result;
-     debug("doSet bool calling callback");
-     delay(1000);
-     result = _setCallbackb(myValue);
-     debug("Got result on bool set callback");
-     delay(1000);
-     return result;
+   if (_isBool && _isSetable && _setCallbackb!=nullptr) {
+     return _setCallbackb(myValue);
    } else {
      return false;
    }
  }
 
+
  bool AthomGetSetObject::isSetable() {
    return _isSetable;
  }
 
+
  int AthomGetSetObject::setGetCallback( int (*yourFunc)() ) {
-   if (_isSetable && (_isFloat || _isBool)) {
+   if ( yourFunc==nullptr || (_isSetable && (_isFloat || _isBool))) {
      // Get and set type must match
      return -1;
    }
@@ -262,8 +264,9 @@
    return 0;
  }
 
+
  int AthomGetSetObject::setGetCallback( float (*yourFunc)() ) {
-   if (_isSetable && (_isInt || _isBool) ) {
+   if ( yourFunc==nullptr || (_isSetable && (_isInt || _isBool))) {
      // Get and set type must match
      return -1;
    }
@@ -276,6 +279,7 @@
    _isGetable = true;
    return 0;
  }
+
 
  int AthomGetSetObject::setGetCallback( bool (*yourFunc)() ) {
    if ( yourFunc==nullptr || (_isSetable && (_isInt || _isFloat))) {
@@ -292,64 +296,73 @@
    return 0;
  }
 
+
  int AthomGetSetObject::doGet(const int myValue) {
    // Value is ignored for Get, just overloading
    return doGetInt();
  }
 
+
  int AthomGetSetObject::doGetInt() {
     // Value is ignored for Get
-    if (_isGetable && _isInt) {
+    if (_isGetable && _isInt && _getCallbacki!=nullptr) {
       return _getCallbacki();
     } else {
       return -1;
     }
  }
 
+
  float AthomGetSetObject::doGet(const float myValue) {
     // Value is ignored for Get, just overloading
     return doGetFloat();
  }
 
+
  float AthomGetSetObject::doGetFloat() {
-   if (_isGetable && _isFloat) {
+   if (_isGetable && _isFloat && _getCallbackf!=nullptr) {
      return _getCallbackf();
    } else {
      return -1.0;
    }
  }
 
+
  bool AthomGetSetObject::doGet(const bool myValue) {
    // Value is ignored for Get, just overloading
    return doGetBool();
  }
 
+
  bool AthomGetSetObject::doGetBool() {
    if (_isGetable && _isBool && _getCallbackb!=nullptr) {
      bool result = _getCallbackb();
-     debug("Got bool get result, wil return");
-     delay(1000);
      return result;
    } else {
      return NULL;
    }
  }
 
+
  bool AthomGetSetObject::isGetable() {
    return _isGetable;
  }
+
 
  bool AthomGetSetObject::isInt() {
    return _isInt;
  }
 
+
  bool AthomGetSetObject::isFloat() {
    return _isFloat;
  }
 
+
  bool AthomGetSetObject::isBool() {
    return _isBool;
  }
+
 
  String AthomGetSetObject::getType() {
    if (_isBool) {return "bool";}
@@ -360,6 +373,7 @@
 
  // ******************************************************
 
+
  AthomCapability::AthomCapability()
  {  // Class Constructor
   // Check capability is valid
@@ -367,6 +381,7 @@
   String validatedCap = "UNKNOWN";
   setName(validatedCap);
  }
+
 
  AthomCapability::AthomCapability(const String myCap)
   : AthomGetSetObject(myCap)
@@ -382,13 +397,19 @@
 
  // ******************************************************
 
+
  AthomConfigItem::AthomConfigItem()
  {  // Class Constructor
   // Check capability is valid
   // Can't throw exceptions so mark bad object
   String validatedCap = "UNKNOWN";
   setName(validatedCap);
+  _minInt = 0;
+  _minFloat = 0.0;
+  _maxInt = 65535;
+  _maxFloat = 1.0;
  }
+
 
  AthomConfigItem::AthomConfigItem(const String myName)
   : AthomGetSetObject(myName)
@@ -400,8 +421,100 @@
      validatedName = "UNKNOWN";
    }
    setName(validatedName);
+   _minInt = 0;
+   _minFloat = 0.0;
+   _maxInt = 65535;
+   _maxFloat = 1.0;
  }
 
+ // Additional GETS
+
+ int AthomConfigItem::getMinInt() {
+   return _minInt;
+ }
+
+
+ int AthomConfigItem::getMaxInt() {
+   return _maxInt;
+ }
+
+
+ float AthomConfigItem::getMinFloat() {
+   return _minFloat;
+ }
+
+
+ float AthomConfigItem::getMaxFloat() {
+   return _maxFloat;
+ }
+
+
+ bool AthomConfigItem::getMinBool() {
+   return false;
+ }
+
+
+ bool AthomConfigItem::getMaxBool() {
+   return true;
+ }
+
+
+ String AthomConfigItem::getDesc() {
+   return _desc;
+ }
+
+ // Additional Sets
+
+ void AthomConfigItem::setMin(const int minValue) {
+   if (_isInt) {
+     _minInt = minValue;
+   } else if (_isFloat) {
+     _minFloat = float(minValue);
+   }
+ }
+
+
+ void AthomConfigItem::setMin(const float minValue) {
+   if (_isFloat) {
+     _minFloat = minValue;
+   } else if (_isInt) {
+     _minInt = int(minValue);
+   }
+ }
+
+
+ void AthomConfigItem::setMin(const bool minValue) {
+   // Ignore the nonsense
+ }
+
+
+ void AthomConfigItem::setMax(const int maxValue) {
+   if (_isInt) {
+     _maxInt = maxValue;
+   } else if (_isFloat) {
+     _maxFloat = float(maxValue);
+   }
+ }
+
+
+ void AthomConfigItem::setMax(const float maxValue) {
+   if (_isFloat) {
+     _maxFloat = maxValue;
+   } else if (_isInt) {
+     _maxInt = int(maxValue);
+   }
+ }
+
+
+ void AthomConfigItem::setMax(const bool maxValue) {
+   // Ignore the nonsense
+ }
+
+
+ void AthomConfigItem::setDesc(const String myDesc) {
+   // TODO Prob should add some truncation/validation here
+   _desc = myDesc;
+ }
 
 
  // ******************************************************
@@ -456,6 +569,7 @@
    setName(validatedClass);
  }
 
+
  int AthomNode::setClass(const String nodeClass) {
    // Sometimes this might be validated
    // Sometimes not...
@@ -467,10 +581,12 @@
    return -1;
  }
 
+
  String AthomNode::getClass() {
    // potatoe potatoe
    return getName();
  }
+
 
  int AthomNode::addCapability(const String myCap){
    int capabilityCount = 0;
@@ -776,6 +892,8 @@ int AthomDevice::findCapabilityByName(const int nodeNumber, const String myCap) 
   }
 }
 
+
+// Templated overloads for bool, int and float
 template <class FuncType>
 void AthomDevice::setCapabilityGetCallback(const int nodeId, const String myCapability, FuncType (*yourFunc)() ) {
   // TODO Add return values
@@ -789,6 +907,7 @@ template void AthomDevice::setCapabilityGetCallback<float>(const int nodeId, con
 template void AthomDevice::setCapabilityGetCallback<bool>(const int nodeId, const String myCapability, bool (*yourFunc)() );
 
 
+// Templated overloads for bool, int and float
 template <class FuncType>
 void AthomDevice::setCapabilitySetCallback(const int nodeId, const String myCapability, FuncType (*yourFunc)(FuncType) ) {
   // TODO Add return values
@@ -883,6 +1002,8 @@ int AthomDevice::addConfigItem(const String myName){
   return configItemCount;
 }
 
+
+// Templated overloads for bool, int and float
 template <class FuncType>
 void AthomDevice::setConfigItemGetCallback(const String myConfigItem, FuncType (*yourFunc)() ) {
   // TODO Add return values
@@ -896,6 +1017,7 @@ template void AthomDevice::setConfigItemGetCallback<float>(const String myConfig
 template void AthomDevice::setConfigItemGetCallback<bool>(const String myConfigItem, bool (*yourFunc)() );
 
 
+// Templated overloads for bool, int and float
 template <class FuncType>
 void AthomDevice::setConfigItemSetCallback(const String myConfigItem, FuncType (*yourFunc)(FuncType) ) {
   // TODO Add return values
@@ -921,13 +1043,11 @@ int AthomDevice::_updateHomeyClass() {
   DynamicJsonBuffer jsonbuffer(622);
   JsonObject& root = jsonbuffer.createObject();
   for (int i = 1; i <= _nodeCount; i++) {
-    //glob_JsonBuffer.insertKeyValue(String(i), getClass(i));
     root[String(i)] = getClass(i);
   }
   // assign to myHomeyClass
   _myHomeyClass = "";
   root.printTo(_myHomeyClass);
-  //_myHomeyClass = jsonwriter.getBuffer();
 }
 
 
@@ -935,25 +1055,16 @@ int AthomDevice::_updateHomeyCaps() {
   // This to update Cloud Vars
   // Need to create a String containing JSON
   // Write array to cloud variable as JSON
-  // jsonwriter is scoped to support it's autobject
-  //JsonWriter jsonwriter;
-  //jsonwriter.init();   // CLear buffer
   DynamicJsonBuffer jsonbuffer(622);
   JsonObject& root = jsonbuffer.createObject();
   for (int i = 1; i <= _nodeCount; i++) {
-    //String nodeCaps = "";
-    //jsonwriter.insertKeyArray(String(i));
     JsonArray& node = root.createNestedArray(String(i));
     int numCaps = countCapabilities(i);
     for (int c = 1; c <= numCaps; c++) {
-      //nodeCaps+= getCapability(i,c);
-      //if (c < numCaps) {nodeCaps+= ",";}
-      //jsonwriter.insertArrayValue(getCapabilityName(i,c));
       node.add(getCapabilityName(i,c));
     }
   }
   // assign to myHomeyCaps
-  //_myHomeyCaps= jsonwriter.getBuffer();
   _myHomeyCaps = "";
   root.printTo(_myHomeyCaps);
 }
@@ -983,6 +1094,94 @@ int AthomDevice::_myHomeyConf(const String message) {
 }
 
 
+int AthomDevice::_configItemGet(const String myConfigItem, const String myParam) {
+  // Only called from _myHomeyGet
+  // Branch to deal with get of Config items
+  // If myParam is empty return value of param
+  // If myParam is not recognised return error
+  // valid myParams are
+  //  "min"
+  //  "max"
+  //  "label"  - i.e. configItem Name
+  //  "desc"
+  //  "type"
+  //  "value"
+  // Also, will grab "special" info. as required through reserved configItem names
+  // Check node and capability exist (return -1 if not)
+  int confId = findConfigItemByName(myConfigItem);
+  if (confId < 1) {
+    debug("WARNING: Config Item Not Found: " + myConfigItem);
+    return confId;
+  }
+  // Get the config Item
+  AthomConfigItem* myItem = getConfigItem(confId);
+  // Get MIN
+  if (myParam=="min") {
+    // Get minimum value
+    if (myItem->isInt()) {
+      _sendReport(0,myConfigItem,myParam,myItem->getMinInt());
+      return 1;
+    }
+    if (myItem->isFloat()) {
+      _sendReport(0,myConfigItem,myParam,myItem->getMinFloat());
+      return 1;
+    }
+    if (myItem->isBool()) {
+      _sendReport(0,myConfigItem,myParam,myItem->getMinBool());
+      return 1;
+    }
+  }
+  // Get MAX
+  if (myParam=="max") {
+    // Get minimum value
+    if (myItem->isInt()) {
+      _sendReport(0,myConfigItem,myParam,myItem->getMaxInt());
+      return 1;
+    }
+    if (myItem->isFloat()) {
+      _sendReport(0,myConfigItem,myParam,myItem->getMaxFloat());
+      return 1;
+    }
+    if (myItem->isBool()) {
+      _sendReport(0,myConfigItem,myParam,myItem->getMaxBool());
+      return 1;
+    }
+  }
+  // Get Label
+  if (myParam=="label") {
+    _sendReport(0,myConfigItem,myParam,myItem->getName());
+    return 1;
+  }
+  // Get Desc
+  if (myParam=="desc") {
+    _sendReport(0,myConfigItem,myParam,myItem->getDesc());
+    return 1;
+  }
+  // Get Type
+  if (myParam=="type") {
+    _sendReport(0,myConfigItem,myParam,myItem->getType());
+    return 1;
+  }
+  // Get Value
+  if (myParam=="value" || myParam=="") {
+    if (myItem->isInt()) {
+      _sendReport(0,myConfigItem,myParam,myItem->doGetInt());
+      return 1;
+    }
+    if (myItem->isFloat()) {
+      _sendReport(0,myConfigItem,myParam,myItem->doGetFloat());
+      return 1;
+    }
+    if (myItem->isBool()) {
+      _sendReport(0,myConfigItem,myParam,myItem->doGetBool());
+      return 1;
+    }
+  }
+  debug("_configItemGet Called but nothing recognised");
+  return -1;
+}
+
+
 int AthomDevice::_myHomeyGet(const String message) {
   // This function decodes the received message
   // message is limited to 63 characters
@@ -998,23 +1197,23 @@ int AthomDevice::_myHomeyGet(const String message) {
   // 123456789012345678901234567890123456789012345678901234567890123
   // {"n": "nodeid","c": "capability_name"}
   debug("myHomeyGet Called");
-  //JsonParserStatic<256, 64> jsonparser;
   int nodeId = 0;
   String myCapability = "";
   // We need to
   // Decode JSON to node and capability
   DynamicJsonBuffer jsonbuffer(256);
-  //jsonparser.clear();
-  //jsonparser.addString(message);
   JsonObject& root = jsonbuffer.parseObject(message);
-
   if (root.success()) {
     // Looks valid (we received all parts)
-    //jsonparser.getOuterValueByKey("n", myCapability); //reuse String
     myCapability = root.get<String>("n");
     nodeId = myCapability.toInt();
-    //jsonparser.getOuterValueByKey("c", myCapability);
     myCapability = root.get<String>("c");
+    if (nodeId==0) {
+      // Config Item GET branches
+      // myCapability is the Config Setting, which param?
+      String myParam = root.get<String>("p");
+      return _configItemGet(myCapability, myParam);
+    }
   } else {
     // bad data
     debug("WARNING: Bad Data");
@@ -1045,8 +1244,6 @@ int AthomDevice::_myHomeyGet(const String message) {
     return 2;
   } else if (myCap->isBool()) {
     bool result = myCap->doGetBool();
-    debug("Got bool result in _get, will send report:" + String(result));
-    delay(1000);
     _sendReport(nodeId, myCapability, result);
     return 3;
   }
@@ -1061,8 +1258,7 @@ int AthomDevice::_myHomeySet(const String message) {
   // Return value should be the actual value that was set.
   // This allows for limits.
   // Set will also (as per GET) trigger a report of the resulting value
-  Serial.println("myHomeySet Called");
-  //JsonParserStatic<256, 64> jsonparser;
+  debug("myHomeySet Called");
   int nodeId = 0;
   String myCapability = "";
   String myValueStr = "";
@@ -1096,7 +1292,7 @@ int AthomDevice::_myHomeySet(const String message) {
     debug("WARNING: Capability Not Settable");
     return -3;
   }
-  // Call the function
+  // Call the callback function
   // See what sort of type we will return and act accordingly
   if (myCap->isInt()) {
     int result = myCap->doSet(int(myValueStr.toInt()));
@@ -1107,15 +1303,11 @@ int AthomDevice::_myHomeySet(const String message) {
     _sendReport(nodeId, myCapability, result);
     return 2;
   } else if (myCap->isBool()) {
-    debug("Attempting to set Boolean.");
-    delay(1000);
     bool myBool = false;
     if (myValueStr == "true") {
       myBool = true;
     }
     bool result = myCap->doSet(myBool);
-    debug("Boolean set complete.");
-    delay(1000);
     _sendReport(nodeId, myCapability, result);
     return 3;
   }
@@ -1135,18 +1327,48 @@ int AthomDevice::_myHomeyRecv(const String message) {
    return 1;
 }
 
+
 void AthomDevice::_sendReport(const int nodeId, const String myCap, const int value) {
+  // Integer wrapper
   String strValue = String(value);
   _sendReport(nodeId, myCap, strValue);
 }
 
+
+void AthomDevice::_sendReport(const int nodeId, const String myConf, const String myParam, const int value) {
+  // Integer wrapper with Config Param
+  String strValue = String(value);
+  DynamicJsonBuffer jsonbuffer(256);
+  JsonObject& root = jsonbuffer.createObject();
+  root[myParam] = strValue;
+  strValue = "";
+  root.printTo(strValue);;
+  _sendReport(nodeId, myConf, strValue);
+}
+
+
 void AthomDevice::_sendReport(const int nodeId, const String myCap, const float value) {
+  // Float wrapper
   String strValue = String(value, 2); // e.g. a 2 place decimal number
   _sendReport(nodeId, myCap, strValue);
 }
 
+
+void AthomDevice::_sendReport(const int nodeId, const String myConf, const String myParam, const float value) {
+  // Float wrapper with Config Param
+  String strValue = String(value, 2); // e.g. a 2 place decimal number
+  DynamicJsonBuffer jsonbuffer(256);
+  JsonObject& root = jsonbuffer.createObject();
+  root[myParam] = strValue;
+  strValue = "";
+  root.printTo(strValue);
+  _sendReport(nodeId, myConf, strValue);
+}
+
+
 void AthomDevice::_sendReport(const int nodeId, const String myCap, const bool value) {
-  bool strValue;
+  // Boolean wrapper
+  String strValue;
   if (value) {
     strValue = "true";
   } else {
@@ -1154,6 +1376,35 @@ void AthomDevice::_sendReport(const int nodeId, const String myCap, const bool v
   }
   _sendReport(nodeId, myCap, strValue);
 }
+
+
+void AthomDevice::_sendReport(const int nodeId, const String myConf, const String myParam, const bool value) {
+  // Boolean wrapper with Config Param
+  String strValue;
+  if (value) {
+    strValue = "true";
+  } else {
+    strValue = "false";
+  }
+  DynamicJsonBuffer jsonbuffer(256);
+  JsonObject& root = jsonbuffer.createObject();
+  root[myParam] = strValue;
+  strValue = "";
+  root.printTo(strValue);
+  _sendReport(nodeId, myConf, strValue);
+}
+
+
+void AthomDevice::_sendReport(const int nodeId, const String myConf, const String myParam, const String value) {
+  // String wrapper with Config Param
+  DynamicJsonBuffer jsonbuffer(256);
+  JsonObject& root = jsonbuffer.createObject();
+  root[myParam] = value;
+  String strValue = "";
+  root.printTo(strValue);
+  _sendReport(nodeId, myConf, strValue);
+}
+
 
 void AthomDevice::_sendReport(const int nodeId, const String myCap, const String value) {
   // OK now, to be clear, this is kind of blocking
@@ -1171,9 +1422,7 @@ void AthomDevice::_sendReport(const int nodeId, const String myCap, const String
   //debug("Checking frequency...");
   while ( millis()-_lastReport < 1000) {
     delay(100); // lower load than process() due to while
-    //debug("WAIT!");
   }
-  //debug("Done waiting.");
   String data = "";
   root.printTo(data);
   debug(data);

@@ -43,7 +43,6 @@ float TestCallBackFloat() {
 
 int TestSetCallBackInt(int myVal) {
   debug("Int Test Set Callback Called OK - returning: " + String(myVal));
-  delay(1000);
   return myVal;
 }
 
@@ -188,6 +187,11 @@ void setup() {
  debug(myDevice.getConfigItem(3)->getName());
  debug("Get ConfigItem by Name adjust02 should be 3");
  debugint(myDevice.findConfigItemByName("adjust02"));
+ // Set GET callbacks
+ debug("Setting GET callbacks int, float and bool for those three");
+ myDevice.setConfigItemGetCallback("polling_int",&TestCallBackInt);
+ myDevice.setConfigItemGetCallback("adjust01",&TestCallBackFloat);
+ myDevice.setConfigItemGetCallback("adjust02",&TestCallBackBool);
 }
 
 
