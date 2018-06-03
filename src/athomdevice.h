@@ -88,11 +88,9 @@ class AthomDevice;
     bool _isInt;
     bool _isFloat;
     bool _isBool;
-    char _setCallbackType;
     int (*_setCallbacki)(int);   // set callback function
     float (*_setCallbackf)(float);   // set callback function
     bool (*_setCallbackb)(bool);   // set callback function
-    char _getCallbackType;
     int (*_getCallbacki)();   // get callback function
     float (*_getCallbackf)();   // get callback function
     bool (*_getCallbackb)();   // get callback function

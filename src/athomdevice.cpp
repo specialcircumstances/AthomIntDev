@@ -229,9 +229,12 @@
    debug("doSet bool Called: " + String(myValue));
    delay(1000);
    if (_isBool && _isSetable && _getCallbackb!=nullptr) {
+     debug("create result bool");
+     delay(1000);
+     bool result;
      debug("doSet bool calling callback");
      delay(1000);
-     bool result = _setCallbackb(myValue);
+     result = _setCallbackb(myValue);
      debug("Got result on bool set callback");
      delay(1000);
      return result;
