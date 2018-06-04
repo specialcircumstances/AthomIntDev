@@ -14,6 +14,10 @@ SerialLogHandler logHandler;
 // Create an Athom Device
 AthomDevice myDevice;
 
+int myTestInt = 0;
+float myTestFloat = 0.0;
+bool myTestBool = false;
+
 void debug(const String message) {
   Serial.print(message);
   uint32_t freemem = System.freeMemory();
@@ -27,35 +31,36 @@ void debugint(const int message) {
 }
 
 int TestCallBackInt() {
-  debug("Test Callback Int Called OK - returning 180");
-  return 180;
+  debug("Test Callback Int Called OK - returning " + String(myTestInt));
+  return myTestInt;
 }
 
 float TestCallBackFloat() {
-  debug("Test Callback Float Called OK - returning 1.8");
-  return 1.8;
+  debug("Test Callback Float Called OK - returning " + String(myTestFloat));
+  return myTestFloat;
 }
 
  bool TestCallBackBool() {
-  debug("Test Callback Bool Called OK - returning true");
-  return true;
+  debug("Test Callback Bool Called OK - returning " + String(myTestBool));
+  return myTestBool;
 }
 
 int TestSetCallBackInt(int myVal) {
-  debug("Int Test Set Callback Called OK - returning: " + String(myVal));
-  return myVal;
+  debug("Int Test Set Callback Called OK - got: " + String(myVal));
+  myTestInt = myVal;
+  return myTestInt;
 }
 
 float TestSetCallBackFloat(float myVal) {
-  debug("Float Test Set Callback Called OK - returning: " + String(myVal));
-  delay(1000);
-  return myVal;
+  debug("Float Test Set Callback Called OK - got: " + String(myVal));
+  myTestFloat = myVal;
+  return myTestFloat;
 }
 
 bool TestSetCallBackBool(bool myVal) {
   debug("Bool Test Set Callback Called OK - returning same bool" + String(myVal));
-  delay(1000);
-  return myVal;
+  myTestBool = myVal;
+  return myTestBool;
 }
 
 void setup() {
@@ -192,6 +197,11 @@ void setup() {
  myDevice.setConfigItemGetCallback("polling_int",&TestCallBackInt);
  myDevice.setConfigItemGetCallback("adjust01",&TestCallBackFloat);
  myDevice.setConfigItemGetCallback("adjust02",&TestCallBackBool);
+ debug("Setting SET callbacks int, float and bool for those three");
+ myDevice.setConfigItemSetCallback("polling_int",&TestSetCallBackInt);
+ myDevice.setConfigItemSetCallback("adjust01",&TestSetCallBackFloat);
+ myDevice.setConfigItemSetCallback("adjust02",&TestSetCallBackBool);
+
 }
 
 

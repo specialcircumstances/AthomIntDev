@@ -284,13 +284,17 @@ class AthomDevice;
       String _myHomeySend;       // A reponse channel ?????
 
       // Cloud Functions we will expose
-      int _myHomeyConf(String message);
+      // int _myHomeyConf(String message);
       int _myHomeyGet(String message);
       int _myHomeySet(String message);
       int _myHomeyAct(String message);
       int _myHomeyRecv(String message); // A query channel ?????
 
       int _configItemGet(const String item, const String param);
+      int _capabilityGet(const int nodeId, const String capability);
+      int _configItemSet(const String item, const String param, const String value);
+      int _capabilitySet(const int nodeId, const String capability, const String value);
+
 
       unsigned long _lastReport; // Last report based on millis()
       void _sendReport(const int nodeId, const String myCap, const int value);

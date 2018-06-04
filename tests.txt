@@ -15,12 +15,22 @@
 {"n":"0","c":"polling_int","p":"value"}
 {"n":"0","c":"polling_int","p":"label"}
 {"n":"0","c":"polling_int","p":"desc"}
-
+{"n":"0","c":"polling_int","p":"value","v":"123"}
+{"n":"0","c":"polling_int","v":"123"}
 
 {"n":"0","c":"adjust02"}
 {"n":"0","c":"adjust02","p":"min"}
 {"n":"0","c":"adjust02","p":"max"}
+{"n":"0","c":"adjust02","v":"123"}
+{"n":"0","c":"adjust02","v":"0.5"}
+{"n":"0","c":"adjust02","v":"true"}
+
 
 {"n":"0","c":"adjust01"}
 {"n":"0","c":"adjust01","p":"min"}
 {"n":"0","c":"adjust01","p":"max"}
+{"n":"0","c":"adjust01","v":"123"}
+{"n":"0","c":"adjust01","v":"0.5"}
+{"n":"0","c":"adjust01","v":"true"}
+
+{"name":"Homey","data":"{\"0\":{\"polling_int\":{\"value\":\"180\"}}}"

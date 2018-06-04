@@ -694,6 +694,8 @@
    _myHomeyActs = "";
    _myHomeySend = "";
    _lastReport = millis();
+
+   // Register all the Cloud variables and functions
    int errors = 0;  // TODO do something with this
    if (Particle.variable("HomeyAPI", _myHomeyAPI)==false)
    {
@@ -721,11 +723,12 @@
        errors++;
    }
    // Init Particle Functions
-   if (Particle.function("HomeyConf", &AthomDevice::_myHomeyConf, this)==false)
-   {
-       Serial.println("Failed to register function HomeyConf.");
-       errors++;
-   }
+   // Don't need HomeyConf anymore :) just use get and set
+   //if (Particle.function("HomeyConf", &AthomDevice::_myHomeyConf, this)==false)
+   //{
+   //   Serial.println("Failed to register function HomeyConf.");
+   // errors++;
+   //}
    if (Particle.function("HomeyGet", &AthomDevice::_myHomeyGet, this)==false)
    {
        Serial.println("Failed to register function HomeyGet.");
@@ -741,7 +744,7 @@
        Serial.println("Failed to register function HomeyAct.");
        errors++;
    }
- }            // Class Constructor
+ }            // end device Class Constructor
 
 
  int AthomDevice::setName(const String myName) {
@@ -1010,6 +1013,8 @@ void AthomDevice::setConfigItemGetCallback(const String myConfigItem, FuncType (
   int myConfId = findConfigItemByName(myConfigItem);
   if (myConfId > 0) {
     getConfigItem(myConfId)->setGetCallback(yourFunc);
+    // Update Cloud variable as type may have changed
+    _updateHomeyConfs();
   }
 }
 template void AthomDevice::setConfigItemGetCallback<int>(const String myConfigItem, int (*yourFunc)() );
@@ -1024,6 +1029,8 @@ void AthomDevice::setConfigItemSetCallback(const String myConfigItem, FuncType (
   int myConfId = findConfigItemByName(myConfigItem);
   if (myConfId > 0) {
     getConfigItem(myConfId)->setSetCallback(yourFunc);
+    // Update Cloud variable as type may have changed
+    _updateHomeyConfs();
   }
 }
 template void AthomDevice::setConfigItemSetCallback<int>(const String myConfigItem, int (*yourFunc)(int) );
@@ -1079,7 +1086,7 @@ int AthomDevice::_updateHomeyConfs() {
   for (int i = 1; i <= _configItemCount; i++) {
     JsonObject& conf = root.createNestedObject(String(i));
     AthomConfigItem* myConfigItem = getConfigItem(i);
-    conf["n"] = myConfigItem->getName();
+    conf["c"] = myConfigItem->getName();
     conf["t"] = myConfigItem->getType();
   }
   // assign to myHomeyConfs
@@ -1088,10 +1095,11 @@ int AthomDevice::_updateHomeyConfs() {
 }
 
 
-int AthomDevice::_myHomeyConf(const String message) {
-   Serial.println("myHomeyConf Called");
-   return 1;
-}
+// Not needed anymore
+//int AthomDevice::_myHomeyConf(const String message) {
+//   Serial.println("myHomeyConf Called");
+//   return 1;
+//}
 
 
 int AthomDevice::_configItemGet(const String myConfigItem, const String myParam) {
@@ -1165,15 +1173,15 @@ int AthomDevice::_configItemGet(const String myConfigItem, const String myParam)
   // Get Value
   if (myParam=="value" || myParam=="") {
     if (myItem->isInt()) {
-      _sendReport(0,myConfigItem,myParam,myItem->doGetInt());
+      _sendReport(0,myConfigItem,"value",myItem->doGetInt());
       return 1;
     }
     if (myItem->isFloat()) {
-      _sendReport(0,myConfigItem,myParam,myItem->doGetFloat());
+      _sendReport(0,myConfigItem,"value",myItem->doGetFloat());
       return 1;
     }
     if (myItem->isBool()) {
-      _sendReport(0,myConfigItem,myParam,myItem->doGetBool());
+      _sendReport(0,myConfigItem,"value",myItem->doGetBool());
       return 1;
     }
   }
@@ -1182,43 +1190,7 @@ int AthomDevice::_configItemGet(const String myConfigItem, const String myParam)
 }
 
 
-int AthomDevice::_myHomeyGet(const String message) {
-  // This function decodes the received message
-  // message is limited to 63 characters
-  // The request will be in JSON format, with node and capability
-  // identified. Note that the GET doesn't return the data,
-  // rather it triggers a report to be sent.
-  //
-  //    {
-  //      "n": "nodeid",
-  //      "c": "capability_name"
-  //    }
-  //0         1         2         3         4         5         6
-  // 123456789012345678901234567890123456789012345678901234567890123
-  // {"n": "nodeid","c": "capability_name"}
-  debug("myHomeyGet Called");
-  int nodeId = 0;
-  String myCapability = "";
-  // We need to
-  // Decode JSON to node and capability
-  DynamicJsonBuffer jsonbuffer(256);
-  JsonObject& root = jsonbuffer.parseObject(message);
-  if (root.success()) {
-    // Looks valid (we received all parts)
-    myCapability = root.get<String>("n");
-    nodeId = myCapability.toInt();
-    myCapability = root.get<String>("c");
-    if (nodeId==0) {
-      // Config Item GET branches
-      // myCapability is the Config Setting, which param?
-      String myParam = root.get<String>("p");
-      return _configItemGet(myCapability, myParam);
-    }
-  } else {
-    // bad data
-    debug("WARNING: Bad Data");
-    return -1;
-  }
+int AthomDevice::_capabilityGet(const int nodeId, const String myCapability) {
   // Check node and capability exist (return -1 if not)
   int capId = findCapabilityByName(nodeId, myCapability);
   if (capId < 1) {
@@ -1247,37 +1219,106 @@ int AthomDevice::_myHomeyGet(const String message) {
     _sendReport(nodeId, myCapability, result);
     return 3;
   }
-  // TODO: we need to wrap in a timeout, if poss
+  // TODO: we need to wrap callbacks in a timeout, if poss?
   return -4;
 }
 
-int AthomDevice::_myHomeySet(const String message) {
-  // Set a value via user provided function.
-  // User function must accept and return same type of variable
-  // int, float or bool.
-  // Return value should be the actual value that was set.
-  // This allows for limits.
-  // Set will also (as per GET) trigger a report of the resulting value
-  debug("myHomeySet Called");
+
+int AthomDevice::_myHomeyGet(const String message) {
+  // This function decodes the received message
+  // message is limited to 63 characters
+  // The request will be in JSON format, with node and capability
+  // identified. Note that the GET doesn't return the data,
+  // rather it triggers a report to be sent using a Particle publish
+  // this response can be <= 255 characters.
+  //
+  //    {
+  //      "n": "nodeid",
+  //      "c": "capability_name"
+  //    }
+  //0         1         2         3         4         5         6
+  // 123456789012345678901234567890123456789012345678901234567890123
+  // {"n": "nodeid","c": "capability_name"}
+  // {"n": "0", "c":"config_label", "p":"config_param"}
+  debug("myHomeyGet Called");
   int nodeId = 0;
   String myCapability = "";
-  String myValueStr = "";
   // We need to
   // Decode JSON to node and capability
   DynamicJsonBuffer jsonbuffer(256);
   JsonObject& root = jsonbuffer.parseObject(message);
-  //
   if (root.success()) {
-   // Looks valid (we received all parts)
-    nodeId = root.get<int>("n");
+    // Looks valid (we received all parts)
+    myCapability = root.get<String>("n");
+    nodeId = myCapability.toInt();
     myCapability = root.get<String>("c");
-    myValueStr =  root.get<String>("v");
+    if (nodeId==0) {
+      // Config Item GET branches
+      // myCapability is the Config Setting, which param?
+      String myParam = root.get<String>("p");
+      return _configItemGet(myCapability, myParam);
+    } else {
+      // Branch to Capability Get.
+      return _capabilityGet(nodeId, myCapability);
+    }
   } else {
-   // bad data
-   debug("WARNING: Bad Data");
-   return -1;
+    // bad data
+    debug("WARNING: Bad Data");
+    return -1;
   }
-  // TODO more validation of input
+}
+
+
+int AthomDevice::_configItemSet(const String myConfigItem, const String myParam, const String myValueStr) {
+  // Only called from _myHomeySet
+  // Branch to deal with set of Config items
+  // If myParam is empty, value will be assumed
+  // If myParam is not recognised return error
+  // valid myParams are
+  //  "value"
+  // Also, will set "special" info. as required through reserved configItem names
+  // Check node and capability exist (return -1 if not)
+  int confId = findConfigItemByName(myConfigItem);
+  if (confId < 1) {
+    debug("WARNING: Config Item Not Found: " + myConfigItem);
+    return confId;
+  }
+  // Get the config Item
+  AthomConfigItem* myItem = getConfigItem(confId);
+  // Get Value
+  if (myParam=="value" || myParam=="") {
+    if (myItem->isInt()) {
+      int myInt = myValueStr.toInt();
+      if (myItem->getMinInt() > myInt) {myInt = myItem->getMinInt();}
+      if (myItem->getMaxInt() < myInt) {myInt = myItem->getMaxInt();}
+      int result = myItem->doSet(myInt);
+      _sendReport(0,myConfigItem,"value",result);
+      return 1;
+    }
+    if (myItem->isFloat()) {
+      float myFloat = myValueStr.toFloat();
+      if (myItem->getMinFloat() > myFloat) {myFloat = myItem->getMinFloat();}
+      if (myItem->getMaxFloat() < myFloat) {myFloat = myItem->getMaxFloat();}
+      float result = myItem->doSet(myFloat);
+      _sendReport(0,myConfigItem,"value",result);
+      return 1;
+    }
+    if (myItem->isBool()) {
+      bool myBool = false;
+      if (myValueStr == "true") {
+        myBool = true;
+      }
+      bool result = myItem->doSet(myBool);
+      _sendReport(0,myConfigItem,"value",result);
+      return 1;
+    }
+  }
+  debug("_configItemSet Called but nothing recognised");
+  return -1;
+}
+
+
+int AthomDevice::_capabilitySet(const int nodeId, const String myCapability, const String myValueStr) {
   // Get Capability and check type for conversion
   // Check node and capability exist (return -1 if not)
   int capId = findCapabilityByName(nodeId, myCapability);
@@ -1316,6 +1357,45 @@ int AthomDevice::_myHomeySet(const String message) {
 }
 
 
+int AthomDevice::_myHomeySet(const String message) {
+  // Set a value via user provided function.
+  // User function must accept and return same type of variable
+  // int, float or bool.
+  // Return value should be the actual value that was set.
+  // This allows for limits.
+  // Set will also (as per GET) trigger a report of the resulting value
+  debug("myHomeySet Called");
+  int nodeId = 0;
+  String myCapability = "";
+  String myValueStr = "";
+  // We need to
+  // Decode JSON to node and capability
+  DynamicJsonBuffer jsonbuffer(256);
+  JsonObject& root = jsonbuffer.parseObject(message);
+  //
+  if (root.success()) {
+   // Looks valid (we received all parts)
+    nodeId = root.get<int>("n");
+    myCapability = root.get<String>("c");
+    myValueStr =  root.get<String>("v");
+    if (nodeId==0) {
+      // Config Item GET branches
+      // myCapability is the Config Setting, which param?
+      String myParam = root.get<String>("p");
+      return _configItemSet(myCapability, myParam, myValueStr);
+    } else {
+      // Branch to Capability Set
+      return _capabilitySet(nodeId, myCapability, myValueStr);
+    }
+  } else {
+   // bad data
+   debug("WARNING: Bad Data");
+   return -1;
+  }
+  // TODO more validation of input or should that be user?
+}
+
+
 int AthomDevice::_myHomeyAct(const String message) {
    Serial.println("myHomeyAct Called");
    return 1;
@@ -1328,6 +1408,8 @@ int AthomDevice::_myHomeyRecv(const String message) {
 }
 
 
+// Send Reports
+
 void AthomDevice::_sendReport(const int nodeId, const String myCap, const int value) {
   // Integer wrapper
   String strValue = String(value);
@@ -1338,12 +1420,7 @@ void AthomDevice::_sendReport(const int nodeId, const String myCap, const int va
 void AthomDevice::_sendReport(const int nodeId, const String myConf, const String myParam, const int value) {
   // Integer wrapper with Config Param
   String strValue = String(value);
-  DynamicJsonBuffer jsonbuffer(256);
-  JsonObject& root = jsonbuffer.createObject();
-  root[myParam] = strValue;
-  strValue = "";
-  root.printTo(strValue);;
-  _sendReport(nodeId, myConf, strValue);
+  _sendReport(nodeId, myConf, myParam, strValue);
 }
 
 
@@ -1357,12 +1434,7 @@ void AthomDevice::_sendReport(const int nodeId, const String myCap, const float 
 void AthomDevice::_sendReport(const int nodeId, const String myConf, const String myParam, const float value) {
   // Float wrapper with Config Param
   String strValue = String(value, 2); // e.g. a 2 place decimal number
-  DynamicJsonBuffer jsonbuffer(256);
-  JsonObject& root = jsonbuffer.createObject();
-  root[myParam] = strValue;
-  strValue = "";
-  root.printTo(strValue);
-  _sendReport(nodeId, myConf, strValue);
+  _sendReport(nodeId, myConf, myParam, strValue);
 }
 
 
@@ -1386,27 +1458,39 @@ void AthomDevice::_sendReport(const int nodeId, const String myConf, const Strin
   } else {
     strValue = "false";
   }
-  DynamicJsonBuffer jsonbuffer(256);
-  JsonObject& root = jsonbuffer.createObject();
-  root[myParam] = strValue;
-  strValue = "";
-  root.printTo(strValue);
-  _sendReport(nodeId, myConf, strValue);
+  _sendReport(nodeId, myConf, myParam, strValue);
 }
 
 
 void AthomDevice::_sendReport(const int nodeId, const String myConf, const String myParam, const String value) {
-  // String wrapper with Config Param
+  // This overload for Config Settings
+  // OK now, to be clear, this is kind of blocking
+  // Particle Cloud rate limits events to 1 Hz
+  // So, to keep things under control, we wait
+  // here, until at least a second since the last report
+  // Build the data set first
+  // As private function, input is assumed good
   DynamicJsonBuffer jsonbuffer(256);
   JsonObject& root = jsonbuffer.createObject();
-  root[myParam] = value;
-  String strValue = "";
-  root.printTo(strValue);
-  _sendReport(nodeId, myConf, strValue);
+  //
+  JsonObject& node = root.createNestedObject(String(nodeId));
+  JsonObject& confItem = node.createNestedObject(myConf);
+  confItem[myParam] = value;
+  // assign to myHomeyCaps
+  //debug("Checking frequency...");
+  while ( millis()-_lastReport < 1000) {
+    delay(100); // lower load than process() due to while
+  }
+  String data = "";
+  root.printTo(data);
+  debug(data);
+  Particle.publish("Homey", data, PRIVATE); // up to 255 bytes
+  _lastReport = millis();
 }
 
 
 void AthomDevice::_sendReport(const int nodeId, const String myCap, const String value) {
+  // This overload for standard GETs
   // OK now, to be clear, this is kind of blocking
   // Particle Cloud rate limits events to 1 Hz
   // So, to keep things under control, we wait
@@ -1426,6 +1510,6 @@ void AthomDevice::_sendReport(const int nodeId, const String myCap, const String
   String data = "";
   root.printTo(data);
   debug(data);
-  Particle.publish("Homey", data, PRIVATE);
+  Particle.publish("Homey", data, PRIVATE);  //up to 255 bytes
   _lastReport = millis();
 }
