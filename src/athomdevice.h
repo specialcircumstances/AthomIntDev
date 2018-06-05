@@ -137,60 +137,22 @@ class AthomDevice;
  };
 
 
- class AthomAction        // Something we can do in response to a Flow
+ class AthomAction : public AthomGetSetObject  // Something we can do in response to a Flow
  {
+   // This class not yet implemented as default set will be provided
+   // by recognised capabilities automagically
    public:
+     // constructor should set a callback
      AthomAction(const String actionName, int (*yourFunc)(int)); // Constructor
-     // Get and set capability name
-     int setName(const String actionName);
-     String getName();
-     //
-     void setCallback( int (*yourFunc)(int) ); // callback func for action
-     //
-     int doAction(const int myValue);       // trigger function from Homey
-
-     // To support multiple actions in an efficient manner
-     int setNode(AthomNode* myNode);
-     AthomAction* getPrev();
-     int setPrev(AthomAction* prevAction);
-     AthomAction* getNext();
-     int setNext(AthomAction* nextAction);
-
-   private:
-     String _actionName;        // Name of the action
-     bool _isUsable;     // true when callback attached
-     int (*_actionCallback) (int);   // action callback function
-     AthomAction* _prevAction;
-     AthomAction* _nextAction;
-     AthomNode* _myNode;  // Which node is this attached to
+     // will need to nerf unused inherited functions I think.
  };
 
 
- class AthomTrigger        // An event we want to offer to trigger Flows
+ class AthomTrigger : public AthomGetSetObject // An event we want to offer to trigger Flows
  {
-   public:
-     AthomTrigger();  //Constructor
-     // Get and set Trigger name
-     int setId(String triggerId);
-     String getId();
-     int setTitle(String triggerTitle);
-     String getTitle();
-
-    // TODO: Tokens. And generally thinking more about triggers
-
-     // Do it
-     int trigger();       //Send the trigger to Homey
-
-     // To support multiple triggers in an efficient manner
-     AthomTrigger* getPrev();
-     int setPrev(AthomTrigger* prevTrigger);
-     AthomTrigger* getNext();
-     int setNext(AthomTrigger* nextTrigger);
-
-   private:
-     String _name;        // Name of the trigger
-     AthomTrigger* _prevTrigger;
-     AthomTrigger* _nextTrigger;
+   // This class not yet implemented as default set will be provided
+   // by recognised capabilities automagically
+   // will need to nerf unused inherited functions I think.
  };
 
 
@@ -262,6 +224,14 @@ class AthomDevice;
       void setConfigItemGetCallback(const String myConfigItem, FuncType (*yourFunc)() );
       template <class FuncType>
       void setConfigItemSetCallback(const String myConfigItem, FuncType (*yourFunc)(FuncType) );
+
+      // User initiated reporting
+      // Return true for success, false for failure
+      bool sendReport();  // Send reports for all nodes and capabilities
+      bool sendReport(const int nodeId); // Send reports for all capabilities of nodeId
+      bool sendReport(const int nodeId, const String myCapability); // Send just this report
+
+
 
     private:
       char _myName[MAX_CHARS_NAME];

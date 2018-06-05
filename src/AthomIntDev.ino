@@ -210,5 +210,6 @@ void loop() {
  // Trigger the webhook
  // Wait 60 seconds
  debug("Mem check");
+ myDevice.sendReport();
  delay(60000);
 }

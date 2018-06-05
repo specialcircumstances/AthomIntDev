@@ -519,26 +519,13 @@
 
  // ******************************************************
 
+/*
+  NOT YET IMPLEMENTED
  AthomAction::AthomAction(const String myName, int (*yourFunc)(int)) {
    // Pass a name and a function to call
-   _isUsable = false;
    setName(myName);
    setCallback(yourFunc);
  }
-
-
- int AthomAction::setName(const String actionName) {
-   // TODO: Check name is unique
-   _actionName = actionName;
-   return 0;
- }
-
-
- String AthomAction::getName() {
-   // Is currently a String
-   return _actionName;
- }
-
 
  void AthomAction::setCallback( int (*yourFunc)(int) ) {
    _actionCallback = yourFunc;
@@ -547,13 +534,15 @@
  int AthomAction::doAction(const int myValue) {
    return _actionCallback(myValue);
  }
+ */
 
 // ***************************************************
-
+/*
+  NOT YET IMPLEMENTED
  AthomTrigger::AthomTrigger() {       // Class Constructor
 
  }
-
+*/
 // ***************************************************
 
  AthomNode::AthomNode(const String myClass)
@@ -617,7 +606,6 @@
    _capabilityCount = capabilityCount;
    // Update Cloud variable
    // parent - _updateHomeyCaps();
-
    return capabilityCount;
  }
 
@@ -797,7 +785,7 @@ int AthomDevice::countNodes() {
 
 
 // Give me a pointer to a particular node
-// Node level, not friendly, use device level methods
+// Node level, not friendly, use device level methods instead
 AthomNode* AthomDevice::getNode(const int nodeNumber) {
     // Returns a pointer to the requested node
     // Check bounds
@@ -820,6 +808,7 @@ AthomNode* AthomDevice::getNode(const int nodeNumber) {
     return nullptr;
 }
 
+
 // Get me the class of a particular nodeID
 // Device level method. Better to use that trying to access
 // the node directly via a pointer
@@ -831,6 +820,7 @@ String AthomDevice::getClass(const int nodeId) {
     return "node_not_found";
   }
 }
+
 
 // Add a capability to a node
 // Returns resulting count of capabilities for that node
@@ -1512,4 +1502,27 @@ void AthomDevice::_sendReport(const int nodeId, const String myCap, const String
   debug(data);
   Particle.publish("Homey", data, PRIVATE);  //up to 255 bytes
   _lastReport = millis();
+}
+
+
+bool AthomDevice::sendReport() {
+  // User initiated sendReport for all nodes and capabilities
+  // This may take some time to complete, as we only send one
+  // report per second. So 6 nodes with 3 capabilities each
+  // would take up to 20 seconds.
+  bool result = true;
+  for (int node = 1; node <= _nodeCount; node++) {
+    debug("Sending reports for node " + String(node));
+    int numCaps = countCapabilities(node);
+    for (int cap = 1; cap <= numCaps; cap++) {
+      AthomCapability* thisCap = getCapability(node,cap);
+      if ( thisCap->isGetable() ) {
+        // Only bother with this if the capability is Gettable
+        String myCap = thisCap->getName();
+        debug("Sending report for " + myCap);
+        if (_capabilityGet(node, myCap) < 1) { result = false; }
+      }
+    }
+  }
+  return result;
 }
