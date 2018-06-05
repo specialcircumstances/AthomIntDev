@@ -4,217 +4,212 @@
  * Author: SpecialCircumstances
  * Date:
  */
-#include "JsonParserGeneratorRK.h"
-#include "AthomIntDev.h"
-#include "athomdefs.h"
+//#include "JsonParserGeneratorRK.h"
+//#include "AthomIntDev.h"
+//#include "athomdefs.h"
+#include "athomdevice.h"
 
-// Global constants
-//const int HOMEYVARBYTELIMIT = 622;
+SerialLogHandler logHandler;
 
-// Cloud variables we will expose
-int myHomeyAPI = 1; // We use as boolean
-String myHomeyClass;
-String myHomeyCaps;
-String myHomeyConfs;
-String myHomeyActs;
+// Create an Athom Device
+AthomDevice myDevice;
 
-// Cloud Functions we will expose
-int myHomeyConf(String newSettings);
-int myHomeyGet(String newSettings);
-int myHomeySet(String newSettings);
-int myHomeyAct(String newSettings);
+int myTestInt = 0;
+float myTestFloat = 0.0;
+bool myTestBool = false;
 
-// functions we don't expose
-int registerHomeyVarFunc();
-int initHomeyNodes(int numberOfNodes);
-int setHomeyClass(int nodeID, String);
+void debug(const String message) {
+  Serial.print(message);
+  uint32_t freemem = System.freeMemory();
+  Serial.print("\t\t\t Free Mem: ");
+  Serial.println(freemem);
+}
 
+void debugint(const int message) {
+  String num = String(message);
+  debug(String("INT: " + num));
+}
 
-// Global Objects
-JsonParserStatic<622, 20> jsonparser; // we only need one
-JsonWriterStatic<622> jsonwriter;
+int TestCallBackInt() {
+  debug("Test Callback Int Called OK - returning " + String(myTestInt));
+  return myTestInt;
+}
 
-int homeyNodes = 0; // Number of Homey Nodes/Devices we provide
-                    // Useful for multiple instances of same Capability
-                    // Set during setup with setHomeyNodes, read in HomeyClass
-                    // Numbered 1,2,3,4 etc..
-char nodeClassArray[MAX_NUMBER_NODES + 1][32]; // NOTE arrays are zero numbered
+float TestCallBackFloat() {
+  debug("Test Callback Float Called OK - returning " + String(myTestFloat));
+  return myTestFloat;
+}
 
+ bool TestCallBackBool() {
+  debug("Test Callback Bool Called OK - returning " + String(myTestBool));
+  return myTestBool;
+}
+
+int TestSetCallBackInt(int myVal) {
+  debug("Int Test Set Callback Called OK - got: " + String(myVal));
+  myTestInt = myVal;
+  return myTestInt;
+}
+
+float TestSetCallBackFloat(float myVal) {
+  debug("Float Test Set Callback Called OK - got: " + String(myVal));
+  myTestFloat = myVal;
+  return myTestFloat;
+}
+
+bool TestSetCallBackBool(bool myVal) {
+  debug("Bool Test Set Callback Called OK - returning same bool" + String(myVal));
+  myTestBool = myVal;
+  return myTestBool;
+}
 
 void setup() {
  Serial.begin(9600);
- // Register the cloud variables
- Serial.println("Registering Homey variables and functions");
- if (registerHomeyVarFunc() != 0) {
-   Serial.println("Registering Homey variables and functions failed.");
- } else {
-   Serial.println("Registering Homey variables and functions succeeded.");
+ while(!Serial.isConnected()) Particle.process();
+ debug("Hello. Please wait 2 secs.");
+ delay(2000); // 3 sec delay
+ // Create AthomDevice
+ debug("Checking we have an AthomDevice");
+ debug("Device name is: " + myDevice.getName());
+ debug("Setting name to TESTY");
+ myDevice.setName("TESTY");
+ debug("Device name is: " + myDevice.getName());
+ int nodeInt = 0;
+ debug("Adding node, bad class");
+ debugint(myDevice.addNode("bad_class"));
+ debug("How many nodes do we have?");
+ debugint(myDevice.countNodes());
+ debug("Adding node, good class other");
+ debugint(myDevice.addNode("other"));
+ debug("How many nodes do we have?");
+ debugint(myDevice.countNodes());
+ debug("Adding node, good class thermostat");
+ debugint(myDevice.addNode("thermostat"));
+ debug("How many nodes do we have?");
+ debugint(myDevice.countNodes());
+ debug("Adding node, good class kettle");
+ debugint(myDevice.addNode("kettle"));
+ debug("How many nodes do we have?");
+ debugint(myDevice.countNodes());
+
+ debug("Checking class of node 1. Should be other");
+ AthomNode* myNode = myDevice.getNode(1);
+ debug(myNode->getClass());
+ debug("via Device");
+ debug(myDevice.getClass(1));
+ debug("Checking class of node 2. Should be thermostat");
+ myNode = myDevice.getNode(2);
+ debug(myNode->getClass());
+ debug("via Device");
+ debug(myDevice.getClass(2));
+ debug("Checking class of node 3. Should be kettle");
+ myNode = myDevice.getNode(3);
+ debug(myNode->getClass());
+ debug("via Device");
+ debug(myDevice.getClass(3));
+ debug("Checking class of node 4. Should be nullptr");
+ myNode = myDevice.getNode(4);
+ if (myNode == nullptr) {
+   debug("nullptr returned OK.");
  }
- Serial.println("Done Setup.");
- initHomeyNodes(2);  // How many nodes are you defining
- setHomeyClass(1, "other");       // Set node 1 Homey Class
- setHomeyClass(2, "thermostat");  // Set node 2 Homey Class
+ debug("via Device - should be not found");
+ debug(myDevice.getClass(4));
+
+ debug("---------------------------------------------");
+ debug("CAPABILITIES");
+ debug("Adding capability, bad node, good class");
+ debugint(myDevice.addCapability(7,"onoff"));
+ debug("Adding capability, good node, bad class");
+ debugint(myDevice.addCapability(3,"rubbish"));
+ debug("Adding capability, good node, good class");
+ debugint(myDevice.addCapability(3,"onoff"));
+ debug("Adding another capability, good node, good class");
+ debugint(myDevice.addCapability(3,"dim"));
+ debug("Adding another capability, good node, good class");
+ debugint(myDevice.addCapability(3,"light_hue"));
+ debug("Adding same capability, different node, good class");
+ debugint(myDevice.addCapability(1,"light_hue"));
+ debug("Adding same capability, different node, good class");
+ debugint(myDevice.addCapability(2,"thermostat_mode"));
+ debug("Adding same capability, same node, same class");
+ debugint(myDevice.addCapability(2,"thermostat_mode"));
+ debug("Checking first class of nodes 1-3.");
+ debug(myDevice.getCapabilityName(1,1));
+ debug(myDevice.getCapabilityName(2,1));
+ debug(myDevice.getCapabilityName(3,1));
+ debug("Checking first class of non existant node.");
+ debug(myDevice.getCapabilityName(4,1));
+ debug("Checking non existant class of first node.");
+ debug(myDevice.getCapabilityName(1,56));
+ debug("Checking non existant class of last node.");
+ debug(myDevice.getCapabilityName(3,56));
+ debug("Checking non existant class of non existant node.");
+ debug(myDevice.getCapabilityName(34,56));
+ debug("Find capability by node and name. 3. dim");
+ debugint(myDevice.findCapabilityByName(3,"dim"));
+ debug("Int Callbacks");
+ debug("Set Callback Method for Node 2, thermostat_mode, Get");
+ myDevice.setCapabilityGetCallback(2,"thermostat_mode",&TestCallBackInt);
+ debug("Set Callback Method for Node 2, thermostat_mode, Set");
+ myDevice.setCapabilitySetCallback(2,"thermostat_mode",&TestSetCallBackInt);
+ debug("Float Callbacks");
+ debug("Set Callback Method for Node 3, Dim, Get");
+ myDevice.setCapabilityGetCallback(3,"dim",&TestCallBackFloat);
+ debug("Set Callback Method for Node 3, Dim, Set");
+ myDevice.setCapabilitySetCallback(3,"dim",&TestSetCallBackFloat);
+ debug("Bool callbacks");
+ debug("Set Callback Method for Node 3, onoff, Get");
+ myDevice.setCapabilityGetCallback(3,"onoff",&TestCallBackBool);
+ debug("Set Callback Method for Node 3, onoff, Set");
+ myDevice.setCapabilitySetCallback(3,"onoff",&TestSetCallBackBool);
+
+ debug("-----------------------------------------");
+ debug("Test add Config Item: polling_int");
+ debugint(myDevice.addConfigItem("polling_int"));
+ debug("How many config items do we have?");
+ debugint(myDevice.countConfigItems());
+ debug("Test add DUPLICATE Config Item: polling_int");
+ debugint(myDevice.addConfigItem("polling_int"));
+ debug("How many config items do we have?");
+ debugint(myDevice.countConfigItems());
+ debug("Get ConfigItem by Number (1)");
+ debug(myDevice.getConfigItem(1)->getName());
+ debug("Get ConfigItem by Name polling_int should be 1");
+ debugint(myDevice.findConfigItemByName("polling_int"));
+ debug("MULTIPLES");
+ debug("Test add Config Item: adjust01 and adjust02");
+ debugint(myDevice.addConfigItem("adjust01"));
+ debugint(myDevice.addConfigItem("adjust02"));
+ debug("How many config items do we have?");
+ debugint(myDevice.countConfigItems());
+ debug("Test add DUPLICATE Config Item: adjust01");
+ debugint(myDevice.addConfigItem("adjust01"));
+ debug("Test add DUPLICATE Config Item: adjust02");
+ debugint(myDevice.addConfigItem("adjust02"));
+ debug("How many config items do we have?");
+ debugint(myDevice.countConfigItems());
+ debug("Get ConfigItem by Number (3)");
+ debug(myDevice.getConfigItem(3)->getName());
+ debug("Get ConfigItem by Name adjust02 should be 3");
+ debugint(myDevice.findConfigItemByName("adjust02"));
+ // Set GET callbacks
+ debug("Setting GET callbacks int, float and bool for those three");
+ myDevice.setConfigItemGetCallback("polling_int",&TestCallBackInt);
+ myDevice.setConfigItemGetCallback("adjust01",&TestCallBackFloat);
+ myDevice.setConfigItemGetCallback("adjust02",&TestCallBackBool);
+ debug("Setting SET callbacks int, float and bool for those three");
+ myDevice.setConfigItemSetCallback("polling_int",&TestSetCallBackInt);
+ myDevice.setConfigItemSetCallback("adjust01",&TestSetCallBackFloat);
+ myDevice.setConfigItemSetCallback("adjust02",&TestSetCallBackBool);
+
 }
 
 
 void loop() {
  // Get some data
- String data = String(64);
- data = "HELLO FROM PHOTON";
  // Trigger the webhook
- Particle.publish("Homey", data, PRIVATE);
- Serial.println("Event published.");
  // Wait 60 seconds
+ debug("Mem check");
+ myDevice.sendReport();
  delay(60000);
-}
-
-
-int registerHomeyVarFunc() {
-  int errors = 0;
-  // Register Homey Variables
-  if (Particle.variable("HomeyAPI", myHomeyAPI)==false)
-  {
-      Serial.println("Failed to register HomeyAPI.");
-      errors++;
-  }
-  if (Particle.variable("HomeyClass", myHomeyClass)==false)
-  {
-      Serial.println("Failed to register HomeyClass.");
-      errors++;
-  }
-  if (Particle.variable("HomeyCaps", myHomeyCaps)==false)
-  {
-      Serial.println("Failed to register HomeyCaps.");
-      errors++;
-  }
-  if (Particle.variable("HomeyConfs", myHomeyConfs)==false)
-  {
-      Serial.println("Failed to register HomeyConfs.");
-      errors++;
-  }
-  if (Particle.variable("HomeyActs", myHomeyActs)==false)
-  {
-      Serial.println("Failed to register HomeyActs.");
-      errors++;
-  }
-  // register Homey Functions
-  if (Particle.function("HomeyConf", myHomeyConf)==false)
-  {
-      Serial.println("Failed to register function HomeyConf.");
-      errors++;
-  }
-  if (Particle.function("HomeyGet", myHomeyGet)==false)
-  {
-      Serial.println("Failed to register function HomeyGet.");
-      errors++;
-  }
-  if (Particle.function("HomeySet", myHomeySet)==false)
-  {
-      Serial.println("Failed to register function HomeySet.");
-      errors++;
-  }
-  if (Particle.function("HomeyAct", myHomeyAct)==false)
-  {
-      Serial.println("Failed to register function HomeyAct.");
-      errors++;
-  }
-  return errors;
-}
-
-
-int myHomeyConf(String newSettings) {
-   Serial.println("myHomeyConf Called");
-   return 1;
-}
-
-
-int myHomeyGet(String newSettings) {
-   Serial.println("myHomeyGet Called");
-   return 1;
-}
-
-int myHomeySet(String newSettings) {
-   Serial.println("myHomeySet Called");
-   return 1;
-}
-
-
-int myHomeyAct(String newSettings) {
-   Serial.println("myHomeyAct Called");
-   return 1;
-}
-
-
-// Set the number of Homey Nodes we will provide
-int initHomeyNodes(int numberOfNodes) {
-  // Initialise, clear the array
-  char mynull[32] = "null";
-  for (int i = 0; i < arraySize(nodeClassArray); i++) {
-    strcpy(nodeClassArray[i],mynull);
-  }
-  // Check within bounds and set global variable
-  if (numberOfNodes > 0 && numberOfNodes <= MAX_NUMBER_NODES) {
-    // Store number
-    homeyNodes = numberOfNodes;
-    return 0;
-  } else {
-    homeyNodes = 0;
-    return 1;
-  }
-}
-
-
-
-// Set the HomeyClass variable
-// Must be a recognised, single, Homey Class (see athomdefs.h)
-int setHomeyClass(int nodeID, String myClass){
-  // Check nodeID within bounds
-  if (!(nodeID > 0 && nodeID <= homeyNodes)) {
-    return 1;
-  }
-  int notfound = 1;
-  char myClassChar[MAX_CHARS_CLASS];
-  myClass.toCharArray(myClassChar,MAX_CHARS_CLASS);
-  for (int i = 0; i < arraySize(athomClasses); i++) {
-    if (strncmp(athomClasses[i],myClassChar,MAX_CHARS_CLASS)==0) {
-      notfound = 0;
-      Serial.println("Homey Class found.");
-      // Set the array
-      strcpy(nodeClassArray[nodeID],myClassChar);
-    }
-  }
-  if (notfound == 1) {
-    Serial.println("Homey Class not found.");
-  }
-  // Write array to cloud variable as JSON
-  {
-    jsonwriter.init();
-    JsonWriterAutoObject obj(&jsonwriter);
-    for (int i = 1; i <= homeyNodes; i++) {
-      jsonwriter.insertKeyValue(String(i), nodeClassArray[i]);
-    }
-  }
-  // assign to myHomeyClass
-  myHomeyClass = jsonwriter.getBuffer();
-  // Clear up jsonwriter
-  jsonwriter.init();
-  return notfound;
-}
-
-// Clear the HomeyCaps variable
-// No idea when this would be needed but add it anyway
-// Must be a recognised, single, Homey Capability (see athomdefs.h)
-int addHomeyCapability(String myCapability) {
-  int notfound = 1;
-  for (int i = 0; i < arraySize(athomCapabilities); i++) {
-    if (athomCapabilities[i] == myCapability) {
-      myHomeyCaps = myCapability;
-      notfound = 0;
-      Serial.println("Homey Class found.");
-    }
-  }
-  if (notfound == 1) {
-    Serial.println("Homey Class not found.");
-  }
-  return notfound;
 }
